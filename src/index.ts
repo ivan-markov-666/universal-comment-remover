@@ -37,8 +37,31 @@ import { detectLanguage, detectLanguageByFilename } from './detectors/language-d
  * console.log(result.code); // 'const x = 5;'
  * ```
  */
-export function removeComments(code: string, options: RemoveOptions = {}): RemoveResult {
-  if (!code || code.trim().length === 0) {
+export function removeComments(code: any, options: RemoveOptions = {}): RemoveResult {
+  // Handle non-string input by converting to string
+  if (typeof code !== 'string') {
+    if (code === null || code === undefined) {
+      return {
+        code: code as any,
+        removedCount: 0,
+        detectedLanguage: undefined
+      };
+    }
+    
+    // Convert non-string values to string, but handle objects/arrays specially
+    const stringValue = typeof code.toString === 'function' 
+      ? code.toString() 
+      : String(code);
+      
+    return {
+      code: stringValue,
+      removedCount: 0,
+      detectedLanguage: undefined
+    };
+  }
+  
+  // Handle empty or whitespace-only strings
+  if (code.trim().length === 0) {
     return {
       code: code,
       removedCount: 0,

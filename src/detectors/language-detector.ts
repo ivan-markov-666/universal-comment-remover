@@ -68,14 +68,20 @@ const EXTENSION_MAP: Record<string, Lang> = {
  * @param filename - Filename with extension
  * @returns Detected language or undefined
  */
-export function detectLanguageByFilename(filename: string): Lang | undefined {
+export function detectLanguageByFilename(filename: string | undefined | null): Lang | undefined {
   if (!filename) return undefined;
   
-  const ext = filename.toLowerCase();
+  // Handle non-string input
+  if (typeof filename !== 'string') {
+    return undefined;
+  }
+  
+  // Normalize the filename - trim spaces and remove trailing dots
+  const normalized = filename.trim().replace(/\.+$/, '');
   
   // Check for exact extension match
   for (const [extension, lang] of Object.entries(EXTENSION_MAP)) {
-    if (ext.endsWith(extension)) {
+    if (normalized.toLowerCase().endsWith(extension)) {
       return lang;
     }
   }
