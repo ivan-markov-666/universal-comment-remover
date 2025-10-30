@@ -1,5 +1,5 @@
 /**
- * Поддържани програмни езици
+ * Supported programming languages
  */
 export type Lang = 
   | "javascript" 
@@ -22,51 +22,51 @@ export type Lang =
   | "swift";
 
 /**
- * Опции за премахване на коментари
+ * Comment removal options
  */
 export interface RemoveOptions {
   /**
-   * Езикът на кода (ако не е указан, ще се опита автоматично разпознаване)
+   * The code language (if not specified, automatic detection will be attempted)
    */
   language?: Lang;
   
   /**
-   * Име на файл за автоматично разпознаване на езика
+   * Filename for automatic language detection
    */
   filename?: string;
   
   /**
-   * Запазване на лицензионни коментари (започващи с /*! или //**)
+   * Preserve license comments (starting with /*! or //**)
    */
   preserveLicense?: boolean;
   
   /**
-   * Dry run режим - не променя кода, само връща какво би било премахнато
+   * Dry run mode - doesn't modify the code, only returns what would be removed
    */
   dryRun?: boolean;
   
   /**
-   * Запазване на празни редове където са били коментарите
+   * Preserve empty lines where comments were
    */
   keepEmptyLines?: boolean;
 }
 
 /**
- * Резултат от премахване на коментари
+ * Result of comment removal
  */
 export interface RemoveResult {
   /**
-   * Обработеният код
+   * The processed code
    */
   code: string;
   
   /**
-   * Брой премахнати коментари
+   * Number of comments removed
    */
   removedCount: number;
   
   /**
-   * Разпознатият език
+   * The detected language
    */
   detectedLanguage?: Lang;
 }

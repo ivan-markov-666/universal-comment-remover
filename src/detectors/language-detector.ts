@@ -1,7 +1,7 @@
 import { Lang } from '../types';
 
 /**
- * Мапинг на файлови разширения към програмни езици
+ * Mapping of file extensions to programming languages
  */
 const EXTENSION_MAP: Record<string, Lang> = {
   // JavaScript/TypeScript
@@ -64,18 +64,24 @@ const EXTENSION_MAP: Record<string, Lang> = {
 };
 
 /**
- * Детектира програмния език по име на файл или разширение
- * @param filename - Име на файл с разширение
- * @returns Разпознатият език или undefined
+ * Detects the programming language by filename or extension
+ * @param filename - Filename with extension
+ * @returns Detected language or undefined
  */
-export function detectLanguageByFilename(filename: string): Lang | undefined {
+export function detectLanguageByFilename(filename: string | undefined | null): Lang | undefined {
   if (!filename) return undefined;
   
-  const ext = filename.toLowerCase();
+  // Handle non-string input
+  if (typeof filename !== 'string') {
+    return undefined;
+  }
   
-  // Проверка за точно съвпадение с разширение
+  // Normalize the filename - trim spaces and remove trailing dots
+  const normalized = filename.trim().replace(/\.+$/, '');
+  
+  // Check for exact extension match
   for (const [extension, lang] of Object.entries(EXTENSION_MAP)) {
-    if (ext.endsWith(extension)) {
+    if (normalized.toLowerCase().endsWith(extension)) {
       return lang;
     }
   }
@@ -84,16 +90,16 @@ export function detectLanguageByFilename(filename: string): Lang | undefined {
 }
 
 /**
- * Опит за детекция на език по съдържанието на кода
- * @param code - Код за анализ
- * @returns Разпознатият език или undefined
+ * Attempts to detect the language by code content
+ * @param code - Code to analyze
+ * @returns Detected language or undefined
  */
 export function detectLanguageByContent(code: string): Lang | undefined {
   if (!code || code.trim().length === 0) return undefined;
   
   const trimmed = code.trim();
   
-  // HTML - проверка за DOCTYPE или HTML тагове
+  // HTML - check for DOCTYPE or HTML tags
   if (trimmed.includes('<!DOCTYPE') || 
       /<html[\s>]/i.test(trimmed) ||
       /<head[\s>]/i.test(trimmed) ||
@@ -101,14 +107,15 @@ export function detectLanguageByContent(code: string): Lang | undefined {
     return 'html';
   }
   
-  // XML - проверка за XML декларация
+  // XML - check for XML declaration
   if (trimmed.startsWith('<?xml')) {
     return 'xml';
   }
   
-  // JSON - проверка за валиден JSON синтаксис
-  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-      (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+  // JSON - check for valid JSON syntax
+  if (trimmed.length > 4 && // Require minimum length for meaningful JSON
+      ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+       (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
     try {
       JSON.parse(trimmed);
       return 'json';
@@ -117,74 +124,87 @@ export function detectLanguageByContent(code: string): Lang | undefined {
     }
   }
   
-  // Python - проверка за Python-специфични ключови думи
-  if (/^(def|class|import|from)\s+/m.test(trimmed) ||
-      /:\s*$/m.test(trimmed)) {
+  // Ruby - check for Ruby-specific patterns first (before Python since they share some syntax)
+  // Check for Ruby's def/end pattern
+  if ((/^\s*def\s+\w+\s*[\s\S]*?\n\s*end\b/m.test(trimmed) && /\bend\b/m.test(trimmed)) ||
+      // Ruby's class/module with end
+      /^\s*(class|module)\s+[\w:]+\s*(<\s*[\w:]+)?\s*\n[\s\S]*?\n\s*end\b/m.test(trimmed) ||
+      // Ruby's puts with string
+      /\bputs\s+["']/.test(trimmed) ||
+      // Ruby's begin/end blocks
+      /\bbegin\b[\s\S]*?\bend\b/m.test(trimmed) ||
+      // Ruby's do/end blocks
+      /\bdo\s*\|.*\|\s*\n[\s\S]*?\n\s*end\b/m.test(trimmed) ||
+      // Ruby's multi-line comments
+      /^=begin\s*\n[\s\S]*?\n=end\b/m.test(trimmed)) {
+    return 'ruby';
+  }
+  
+  // Python - check for Python-specific keywords with more specific patterns
+  // Check for Python's def with colon and indentation
+  if (/^\s*def\s+\w+\s*\([^)]*\)\s*:/m.test(trimmed) ||
+      // Python's class with colon and inheritance
+      /^\s*class\s+\w+\s*(\([^)]*\))?\s*:/m.test(trimmed) ||
+      // Python's import/from with newline or end of string
+      /^\s*(import|from)\s+\w+/m.test(trimmed) && !/[{};]/.test(trimmed)) {
     return 'python';
   }
   
-  // PHP - проверка за PHP тагове
+  // PHP - check for PHP tags
   if (trimmed.includes('<?php')) {
     return 'php';
   }
   
-  // SQL - проверка за SQL ключови думи
+  // SQL - check for SQL keywords
   if (/^(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\s+/im.test(trimmed)) {
     return 'sql';
   }
   
-  // Ruby - проверка за Ruby специфични неща
-  if (/^(def|class|module|require)\s+/m.test(trimmed) ||
-      trimmed.includes('puts ') ||
-      /=begin[\s\S]*=end/m.test(trimmed)) {
-    return 'ruby';
-  }
-  
-  // Java - проверка за Java специфични патърни
+  // Java - check for Java-specific patterns
   if (/^(public|private|protected)\s+(class|interface|enum)/m.test(trimmed) ||
       trimmed.includes('System.out.println')) {
     return 'java';
   }
   
-  // C# - проверка за C# специфични неща
+  // C# - check for C#-specific patterns
   if (trimmed.includes('using System;') ||
       /namespace\s+\w+/m.test(trimmed)) {
     return 'csharp';
   }
-  
-  // Go - проверка за Go специфични keywords
+    
+// Rust - check for Rust-specific patterns
+  if (/^(fn|pub fn|impl|trait|mod|use)\s+/m.test(trimmed) ||
+      trimmed.includes('println!')) {
+    return 'rust';
+  }
+
+  // Swift - check for Swift-specific patterns (before Go)
+  if (/^(func|var|let|class|struct|enum)\s+\w+/m.test(trimmed) &&
+      (trimmed.includes(': ') || trimmed.includes('-> '))) {
+    return 'swift';
+  }
+
+  // Go - check for Go-specific patterns (after Swift)
   if (/^package\s+\w+/m.test(trimmed) ||
       /^func\s+\w+/m.test(trimmed) ||
       trimmed.includes('fmt.Println')) {
     return 'go';
   }
   
-  // Rust - проверка за Rust keywords
-  if (/^(fn|pub fn|impl|trait|mod|use)\s+/m.test(trimmed) ||
-      trimmed.includes('println!')) {
-    return 'rust';
-  }
-  
-  // Swift - проверка за Swift keywords
-  if (/^(func|var|let|class|struct|enum)\s+\w+/m.test(trimmed) &&
-      (trimmed.includes(': ') || trimmed.includes('-> '))) {
-    return 'swift';
-  }
-  
-  // TypeScript - проверка за TypeScript типове
+  // TypeScript - check for TypeScript types
   if (/:\s*(string|number|boolean|any|void|never)\s*[=;,\)]/m.test(trimmed) ||
       trimmed.includes('interface ') ||
       trimmed.includes('type ')) {
     return 'typescript';
   }
   
-  // JavaScript - fallback за JS синтаксис
+  // JavaScript - fallback for JS syntax
   if (/^(function|const|let|var|class|export|import)\s+/m.test(trimmed) ||
       trimmed.includes('=>')) {
     return 'javascript';
   }
   
-  // CSS - проверка за CSS селектори
+  // CSS - check for CSS selectors
   if (/[.#]?\w+\s*\{[\s\S]*\}/m.test(trimmed)) {
     return 'css';
   }
@@ -193,19 +213,19 @@ export function detectLanguageByContent(code: string): Lang | undefined {
 }
 
 /**
- * Детектира езика чрез комбиниране на методи
- * @param filename - Опционално име на файл
- * @param code - Опционално съдържание на код
- * @returns Разпознатият език или undefined
+ * Detects the language by combining multiple methods
+ * @param filename - Optional filename
+ * @param code - Optional code content
+ * @returns Detected language or undefined
  */
 export function detectLanguage(filename?: string, code?: string): Lang | undefined {
-  // Първо опитваме по filename (по-надеждно)
+  // First try by filename (more reliable)
   if (filename) {
     const langByFilename = detectLanguageByFilename(filename);
     if (langByFilename) return langByFilename;
   }
   
-  // Ако няма filename или не сме успели да разпознаем, опитваме по съдържание
+  // If no filename or couldn't detect by filename, try by content
   if (code) {
     return detectLanguageByContent(code);
   }

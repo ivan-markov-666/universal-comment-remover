@@ -1,4 +1,4 @@
-# Source files (публикуваме само dist/)
+# Source files (we only publish dist/)
 src/
 test/
 *.test.ts
@@ -15,7 +15,7 @@ jest.config.js
 .travis.yml
 .gitlab-ci.yml
 
-# Documentation (освен README)
+# Documentation (except README)
 docs/
 examples/
 *.md

@@ -1,14 +1,14 @@
 /**
- * Премахва коментари от JSON код (JSON5 стил)
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари (не се поддържа за JSON)
- * @returns Обработен код
+ * Removes comments from JSON code (JSON5 style)
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments (not supported for JSON)
+ * @returns Processed code
  */
 export function removeJsonComments(code: string, preserveLicense: boolean = false): string {
   if (!code) return code;
   
   try {
-    // Опростена имплементация за премахване на // и /* */ коментари от JSON
+    // Simplified implementation for removing // and /* */ comments from JSON
     let result = '';
     let inString = false;
     let inSingleLineComment = false;
@@ -19,7 +19,7 @@ export function removeJsonComments(code: string, preserveLicense: boolean = fals
       const char = code[i];
       const nextChar = i < code.length - 1 ? code[i + 1] : '';
       
-      // Ако сме в string, просто добавяме символа
+      // If we're in a string, just add the character
       if (inString) {
         result += char;
         if (char === stringChar && code[i - 1] !== '\\') {
@@ -28,7 +28,7 @@ export function removeJsonComments(code: string, preserveLicense: boolean = fals
         continue;
       }
       
-      // Проверка за начало на string
+      // Check for string start
       if (char === '"' || char === "'") {
         inString = true;
         stringChar = char;
@@ -36,16 +36,16 @@ export function removeJsonComments(code: string, preserveLicense: boolean = fals
         continue;
       }
       
-      // Ако сме в single-line коментар
+      // If we're in a single-line comment
       if (inSingleLineComment) {
         if (char === '\n') {
           inSingleLineComment = false;
-          result += char;  // Запазваме newline
+          result += char;  // Preserve newline
         }
         continue;
       }
       
-      // Ако сме в multi-line коментар
+      // If we're in a multi-line comment
       if (inMultiLineComment) {
         if (char === '*' && nextChar === '/') {
           inMultiLineComment = false;
@@ -54,21 +54,21 @@ export function removeJsonComments(code: string, preserveLicense: boolean = fals
         continue;
       }
       
-      // Проверка за начало на single-line коментар
+      // Check for start of single-line comment
       if (char === '/' && nextChar === '/') {
         inSingleLineComment = true;
         i++;  // Skip second '/'
         continue;
       }
       
-      // Проверка за начало на multi-line коментар
+      // Check for start of multi-line comment
       if (char === '/' && nextChar === '*') {
         inMultiLineComment = true;
         i++;  // Skip '*'
         continue;
       }
       
-      // Нормален символ
+      // Normal character
       result += char;
     }
     
@@ -80,12 +80,17 @@ export function removeJsonComments(code: string, preserveLicense: boolean = fals
 }
 
 /**
- * Премахва коментари от YAML код
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари
- * @returns Обработен код
+ * Removes comments from YAML code
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
+ * @returns Processed code
  */
-export function removeYamlComments(code: string, preserveLicense: boolean = false): string {
+export function removeYamlComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
   if (!code) return code;
   
   const lines = code.split('\n');
@@ -94,23 +99,26 @@ export function removeYamlComments(code: string, preserveLicense: boolean = fals
   for (const line of lines) {
     const trimmed = line.trim();
     
-    // Празен ред или само коментар
+    // Empty line or just a comment
     if (trimmed.startsWith('#')) {
       if (preserveLicense && isLicenseComment(trimmed)) {
         result.push(line);
+      } else if (keepEmptyLines) {
+        result.push('');
       }
       continue;
     }
     
-    // Ред с код и коментар
+    // Line with code and comment
     const commentIndex = findCommentIndex(line);
     if (commentIndex !== -1) {
       const codeBeforeComment = line.substring(0, commentIndex).trimEnd();
       if (codeBeforeComment.length > 0) {
         result.push(codeBeforeComment);
+      } else if (keepEmptyLines) {
+        result.push('');
       }
     } else {
-      // Обикновен ред без коментар
       result.push(line);
     }
   }
@@ -119,16 +127,56 @@ export function removeYamlComments(code: string, preserveLicense: boolean = fals
 }
 
 /**
- * Премахва коментари от Ruby код
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари
- * @returns Обработен код
+ * Removes comments from Ruby code
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
+ * @returns Processed code
  */
-export function removeRubyComments(code: string, preserveLicense: boolean = false): string {
+export function removeRubyComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
   if (!code) return code;
   
-  const lines = code.split('\n');
-  const result: string[] = [];
+  // First, protect percent literals (e.g., %q{}, %w[], %r{}, etc.)
+  // This pattern matches % followed by an optional modifier (q,Q,r,R,w,W,x),
+  // a delimiter (any non-word, non-whitespace character),
+  // and everything up to the matching closing delimiter
+  // It properly handles nested delimiters and escaped characters
+  const percentLiteralPattern = /(^|\s)(%[qQrRwWx]?([^\w\s]))(?:[^\\]|\\.)*?\3/g;
+  const percentLiterals: {id: string, content: string}[] = [];
+  let percentLiteralIndex = 0;
+  
+  // First pass: protect percent literals
+  let withProtectedLiterals = code;
+  let match;
+  
+  // We need to use a while loop to handle all matches correctly
+  const regex = new RegExp(percentLiteralPattern);
+  let lastIndex = 0;
+  while ((match = regex.exec(code)) !== null) {
+    // Prevent infinite loops for zero-length matches
+    if (match.index === regex.lastIndex) {
+      regex.lastIndex++;
+    }
+    
+    const [fullMatch, prefix, , delimiter] = match;
+    const startPos = match.index + prefix.length;
+    const endPos = code.indexOf(delimiter, startPos + 1);
+    
+    if (endPos !== -1) {
+      const literalContent = code.substring(match.index, endPos + 1);
+      const id = `__PERCENT_LITERAL_${percentLiteralIndex++}__`;
+      percentLiterals.push({ id, content: literalContent });
+      withProtectedLiterals = withProtectedLiterals.replace(literalContent, id);
+    }
+  }
+  
+  // Process the code with percent literals protected
+  let result = '';
+  const lines = withProtectedLiterals.split('\n');
   let inMultilineComment = false;
   let multilineBuffer: string[] = [];
   let isLicenseBlock = false;
@@ -136,12 +184,20 @@ export function removeRubyComments(code: string, preserveLicense: boolean = fals
   for (const line of lines) {
     const trimmed = line.trim();
     
-    // Multiline коментари =begin ... =end
+    // Skip processing if this line is part of a protected literal
+    if (line.includes('__PERCENT_LITERAL_')) {
+      result += line + '\n';
+      continue;
+    }
+    
+    // Multiline comments =begin ... =end
     if (trimmed.startsWith('=begin')) {
       inMultilineComment = true;
       multilineBuffer = [line];
-      // Проверяваме дали е license блок
       isLicenseBlock = preserveLicense && isLicenseComment(line);
+      if (!isLicenseBlock && keepEmptyLines) {
+        result += '\n';
+      }
       continue;
     }
     
@@ -151,13 +207,15 @@ export function removeRubyComments(code: string, preserveLicense: boolean = fals
       if (trimmed.startsWith('=end')) {
         inMultilineComment = false;
         
-        // Ако е license блок, проверяваме целия буфер за license keywords
         if (preserveLicense) {
           const blockContent = multilineBuffer.join('\n');
           if (isLicenseBlock || isLicenseComment(blockContent)) {
-            // Запазваме целия блок
-            result.push(...multilineBuffer);
+            result += multilineBuffer.join('\n') + '\n';
+          } else if (keepEmptyLines) {
+            result += '\n'.repeat(multilineBuffer.length);
           }
+        } else if (keepEmptyLines) {
+          result += '\n'.repeat(multilineBuffer.length);
         }
         
         multilineBuffer = [];
@@ -166,43 +224,45 @@ export function removeRubyComments(code: string, preserveLicense: boolean = fals
       continue;
     }
     
-    // Single line коментари с #
-    if (trimmed.startsWith('#')) {
-      if (preserveLicense && isLicenseComment(trimmed)) {
-        result.push(line);
-      }
-      continue;
-    }
-    
-    // Ред с код и коментар
+    // Handle single line comments with #, but not in strings or regex
     const commentIndex = findCommentIndex(line);
     if (commentIndex !== -1) {
       const codeBeforeComment = line.substring(0, commentIndex).trimEnd();
       const comment = line.substring(commentIndex);
       
       if (codeBeforeComment.length > 0) {
-        // Ако има код преди коментара и коментарът е license, запазваме и двете
+        // There's code before the comment
         if (preserveLicense && isLicenseComment(comment)) {
-          result.push(line);
+          result += line + '\n';
         } else {
-          result.push(codeBeforeComment);
+          result += codeBeforeComment + '\n';
         }
-      } else if (preserveLicense && isLicenseComment(comment)) {
-        // Само коментар на реда и е license
-        result.push(line);
+      } else {
+        // The line is *only* a comment
+        if (preserveLicense && isLicenseComment(comment)) {
+          result += line + '\n';
+        } else if (keepEmptyLines) {
+          result += '\n';
+        }
       }
       continue;
     }
     
-    // Обикновен ред с код
-    result.push(line);
+    // No comment on this line
+    result += line + '\n';
   }
   
-  return result.join('\n');
+  // Restore percent literals
+  result = result.replace(/__PERCENT_LITERAL_(\d+)__/g, (_, index) => {
+    const literal = percentLiterals[parseInt(index)];
+    return literal ? literal.content : '';
+  });
+  
+  return result.trimEnd();
 }
 
 /**
- * Проверява дали коментарът е лицензионен
+ * Checks if a comment is a license comment
  */
 function isLicenseComment(comment: string): boolean {
   const lower = comment.toLowerCase();
@@ -213,7 +273,7 @@ function isLicenseComment(comment: string): boolean {
 }
 
 /**
- * Намира индекса на # коментар в реда (игнорира # в стрингове)
+ * Finds the index of a # comment in a line (ignores # in strings)
  */
 function findCommentIndex(line: string): number {
   let inString = false;
