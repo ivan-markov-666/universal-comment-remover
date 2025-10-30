@@ -1,0 +1,1935 @@
+import { removeComments } from '../src/index';
+
+describe('JavaScript/TypeScript Remover - Advanced Edge Cases', () => {
+  
+  // ============================================================================
+  // 1. Template Literals - Basic
+  // ============================================================================
+  describe('Template Literals', () => {
+    test('comment-like text inside template literal', () => {
+      const code = `const msg = \`This is // not a comment\`;
+// Real comment
+console.log(msg);`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('// not a comment');
+      expect(result.code).not.toContain('// Real comment');
+    });
+
+    test('multi-line template literal with comment-like text', () => {
+      const code = `const html = \`
+  <div>
+    // This looks like a comment but isn't
+    /* Neither is this */
+  </div>
+\`;
+// Actual comment`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('// This looks like a comment');
+      expect(result.code).toContain('/* Neither is this */');
+      expect(result.code).not.toContain('// Actual comment');
+    });
+
+    test('nested template literals', () => {
+      const code = `const outer = \`outer \${inner \`nested\`} text\`;
+// Comment to remove`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('outer ${inner `nested`}');
+      expect(result.code).not.toContain('// Comment');
+    });
+
+    test('template literal with expressions and comments outside', () => {
+      const code = `// Comment before
+const msg = \`Hello \${name}\`; // Inline comment
+// Comment after`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('const msg = `Hello ${name}`;');
+      expect(result.code).not.toContain('// Comment before');
+      expect(result.code).not.toContain('// Inline comment');
+      expect(result.code).not.toContain('// Comment after');
+    });
+
+    test('template literal with escaped backticks', () => {
+      const code = `const str = \`This has \\\` backtick\`;
+// Comment`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('\\` backtick');
+      expect(result.code).not.toContain('// Comment');
+    });
+
+    test('tagged template literal', () => {
+      const code = `// Comment
+const result = myTag\`template \${value}\`;`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('myTag`template ${value}`');
+      expect(result.code).not.toContain('// Comment');
+    });
+  });
+
+  // ============================================================================
+  // 2. Regex Literals
+  // ============================================================================
+  describe('Regex Literals', () => {
+    test('regex literal with slashes', () => {
+      const code = `const urlPattern = /https?:\\/\\//; // URL regex
+const test = urlPattern.test(url);`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('/https?:\\/\\//');
+      expect(result.code).not.toContain('// URL regex');
+    });
+
+    test('regex with flags and comment', () => {
+      const code = `const pattern = /test/gi; // Case insensitive`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('/test/gi;');
+      expect(result.code).not.toContain('// Case insensitive');
+    });
+
+    test('regex that looks like division', () => {
+      const code = `const a = 10 / 2; // Division
+const regex = /\\d+/; // Regex`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('10 / 2;');
+      expect(result.code).toContain('/\\d+/;');
+      expect(result.code).not.toContain('// Division');
+      expect(result.code).not.toContain('// Regex');
+    });
+
+    test('regex with comment-like patterns inside', () => {
+      const code = `const pattern = /\\/\\/ match this/; // Real comment`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('/\\/\\/ match this/;');
+      expect(result.code).not.toContain('// Real comment');
+    });
+
+    test('complex regex with character classes', () => {
+      const code = `// Email regex
+const email = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('[a-zA-Z0-9._%+-]+');
+      expect(result.code).not.toContain('// Email regex');
+    });
+
+    test('regex with escaped forward slash', () => {
+      const code = `const regex = /path\\/to\\/file/; // Comment`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('/path\\/to\\/file/;');
+      expect(result.code).not.toContain('// Comment');
+    });
+  });
+
+  // ============================================================================
+  // 3. Division Operator vs Regex
+  // ============================================================================
+  describe('Division Operator vs Regex Disambiguation', () => {
+    test('simple division', () => {
+      const code = `const result = a / b; // Division`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('a / b;');
+      expect(result.code).not.toContain('// Division');
+    });
+
+    test('multiple divisions', () => {
+      const code = `const result = a / b / c; // Multiple divisions`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('a / b / c;');
+      expect(result.code).not.toContain('// Multiple');
+    });
+
+    test('division after return', () => {
+      const code = `function calc() {
+  return x / y; // Return division
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('return x / y;');
+      expect(result.code).not.toContain('// Return');
+    });
+
+    test('regex after equals', () => {
+      const code = `const pattern = /test/; // Regex after equals`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('const pattern = /test/;');
+      expect(result.code).not.toContain('// Regex');
+    });
+
+    test('regex after comma', () => {
+      const code = `const arr = [1, /test/]; // Regex in array`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('[1, /test/];');
+      expect(result.code).not.toContain('// Regex in array');
+    });
+
+    test('regex after opening bracket', () => {
+      const code = `if (/test/.test(str)) { } // Regex in condition`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('/test/.test(str)');
+      expect(result.code).not.toContain('// Regex in condition');
+    });
+  });
+
+  // ============================================================================
+  // 4. JSX Comments
+  // ============================================================================
+  describe('JSX Comments', () => {
+    test('JSX block comment', () => {
+      const code = `function Component() {
+  return (
+    <div>
+      {/* JSX comment */}
+      <h1>Title</h1>
+    </div>
+  );
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('<h1>Title</h1>');
+      expect(result.code).not.toContain('JSX comment');
+    });
+
+    test('JSX single-line comment', () => {
+      const code = `const element = (
+  <div>
+    {// JSX single line comment
+    }
+    <p>Text</p>
+  </div>
+);`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('<p>Text</p>');
+      // Single line JSX comments are tricky - they might remain as {//}
+    });
+
+    test('multiple JSX comments', () => {
+      const code = `<div>
+  {/* Comment 1 */}
+  <p>Text 1</p>
+  {/* Comment 2 */}
+  <p>Text 2</p>
+</div>`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('<p>Text 1</p>');
+      expect(result.code).toContain('<p>Text 2</p>');
+      expect(result.code).not.toContain('Comment 1');
+      expect(result.code).not.toContain('Comment 2');
+    });
+
+    test('JSX comment with nested JSX', () => {
+      const code = `<div>
+  {/* This is a comment with <nested> tags */}
+  <span>Content</span>
+</div>`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('<span>Content</span>');
+      expect(result.code).not.toContain('This is a comment');
+    });
+
+    test('JSX comment in props', () => {
+      const code = `<Button
+  {/* disabled={true} */}
+  onClick={handleClick}
+/>`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('onClick={handleClick}');
+      expect(result.code).not.toContain('disabled={true}');
+    });
+  });
+
+  // ============================================================================
+  // 5. Arrow Functions
+  // ============================================================================
+  describe('Arrow Functions with Comments', () => {
+    test('arrow function with implicit return', () => {
+      const code = `// Comment before
+const fn = () => value; // Inline comment`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('const fn = () => value;');
+      expect(result.code).not.toContain('// Comment before');
+      expect(result.code).not.toContain('// Inline');
+    });
+
+    test('arrow function with block body', () => {
+      const code = `const fn = () => {
+  // Comment inside
+  return value;
+};`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('return value;');
+      expect(result.code).not.toContain('// Comment inside');
+    });
+
+    test('arrow function with destructured params', () => {
+      const code = `// Destructuring arrow
+const fn = ({ name, age }) => {
+  console.log(name); // Log name
+};`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('({ name, age })');
+      expect(result.code).not.toContain('// Destructuring');
+      expect(result.code).not.toContain('// Log name');
+    });
+
+    test('nested arrow functions', () => {
+      const code = `// Outer arrow
+const outer = () => {
+  // Inner arrow
+  const inner = () => {
+    return 42; // Return value
+  };
+};`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('const outer = () =>');
+      expect(result.code).toContain('const inner = () =>');
+      expect(result.code).not.toContain('// Outer');
+      expect(result.code).not.toContain('// Inner');
+      expect(result.code).not.toContain('// Return value');
+    });
+
+    test('arrow function with default parameters', () => {
+      const code = `// Default params
+const greet = (name = "World") => \`Hello \${name}\`; // Greeting`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('(name = "World")');
+      expect(result.code).not.toContain('// Default params');
+      expect(result.code).not.toContain('// Greeting');
+    });
+  });
+
+  // ============================================================================
+  // 6. Async/Await Functions
+  // ============================================================================
+  describe('Async/Await with Comments', () => {
+    test('async function with await', () => {
+      const code = `// Async function
+async function fetchData() {
+  const response = await fetch(url); // Fetch data
+  return response.json(); // Parse JSON
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('async function fetchData()');
+      expect(result.code).toContain('await fetch(url);');
+      expect(result.code).not.toContain('// Async function');
+      expect(result.code).not.toContain('// Fetch data');
+      expect(result.code).not.toContain('// Parse JSON');
+    });
+
+    test('async arrow function', () => {
+      const code = `// Async arrow
+const loadData = async () => {
+  const data = await getData(); // Get data
+  return data;
+};`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('const loadData = async () =>');
+      expect(result.code).not.toContain('// Async arrow');
+      expect(result.code).not.toContain('// Get data');
+    });
+
+    test('try-catch with async/await', () => {
+      const code = `async function fetchData() {
+  try {
+    // Try to fetch
+    const data = await fetch(url);
+  } catch (error) {
+    // Handle error
+    console.error(error);
+  }
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('try {');
+      expect(result.code).toContain('catch (error)');
+      expect(result.code).not.toContain('// Try to fetch');
+      expect(result.code).not.toContain('// Handle error');
+    });
+
+    test('multiple awaits with comments', () => {
+      const code = `async function process() {
+  const a = await stepOne(); // Step 1
+  const b = await stepTwo(a); // Step 2
+  const c = await stepThree(b); // Step 3
+  return c;
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('await stepOne();');
+      expect(result.code).toContain('await stepTwo(a);');
+      expect(result.code).toContain('await stepThree(b);');
+      expect(result.code).not.toContain('// Step 1');
+      expect(result.code).not.toContain('// Step 2');
+      expect(result.code).not.toContain('// Step 3');
+    });
+  });
+
+  // ============================================================================
+  // 7. Generator Functions
+  // ============================================================================
+  describe('Generator Functions', () => {
+    test('generator function with yield', () => {
+      const code = `// Generator function
+function* generateNumbers() {
+  yield 1; // First number
+  yield 2; // Second number
+  yield 3; // Third number
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('function* generateNumbers()');
+      expect(result.code).toContain('yield 1;');
+      expect(result.code).not.toContain('// Generator function');
+      expect(result.code).not.toContain('// First number');
+    });
+
+    test('generator with yield*', () => {
+      const code = `function* delegatingGenerator() {
+  // Delegate to another generator
+  yield* otherGenerator();
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('yield* otherGenerator();');
+      expect(result.code).not.toContain('// Delegate');
+    });
+
+    test('async generator', () => {
+      const code = `// Async generator
+async function* asyncGen() {
+  yield await fetchData(); // Async yield
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('async function* asyncGen()');
+      expect(result.code).not.toContain('// Async generator');
+      expect(result.code).not.toContain('// Async yield');
+    });
+  });
+
+  // ============================================================================
+  // 8. Modern JavaScript Operators
+  // ============================================================================
+  describe('Modern JavaScript Operators', () => {
+    test('nullish coalescing operator', () => {
+      const code = `// Nullish coalescing
+const value = input ?? defaultValue; // Use default if null/undefined`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('input ?? defaultValue;');
+      expect(result.code).not.toContain('// Nullish');
+      expect(result.code).not.toContain('// Use default');
+    });
+
+    test('optional chaining', () => {
+      const code = `// Optional chaining
+const name = user?.profile?.name; // Safe access`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('user?.profile?.name;');
+      expect(result.code).not.toContain('// Optional');
+      expect(result.code).not.toContain('// Safe access');
+    });
+
+    test('optional chaining with function calls', () => {
+      const code = `const result = obj?.method?.(args); // Optional call`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('obj?.method?.(args);');
+      expect(result.code).not.toContain('// Optional call');
+    });
+
+    test('logical assignment operators', () => {
+      const code = `// Logical OR assignment
+x ||= defaultValue; // Set if falsy
+y &&= newValue; // Set if truthy
+z ??= backup; // Set if nullish`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('x ||= defaultValue;');
+      expect(result.code).toContain('y &&= newValue;');
+      expect(result.code).toContain('z ??= backup;');
+      expect(result.code).not.toContain('// Logical');
+      expect(result.code).not.toContain('// Set if');
+    });
+
+    test('exponentiation operator', () => {
+      const code = `const result = base ** exponent; // Power`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('base ** exponent;');
+      expect(result.code).not.toContain('// Power');
+    });
+  });
+
+  // ============================================================================
+  // 9. Labeled Statements
+  // ============================================================================
+  describe('Labeled Statements', () => {
+    test('labeled loop with break', () => {
+      const code = `// Outer loop
+outerLoop: for (let i = 0; i < 10; i++) {
+  for (let j = 0; j < 10; j++) {
+    if (condition) break outerLoop; // Break outer
+  }
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('outerLoop: for');
+      expect(result.code).toContain('break outerLoop;');
+      expect(result.code).not.toContain('// Outer loop');
+      expect(result.code).not.toContain('// Break outer');
+    });
+
+    test('labeled statement with continue', () => {
+      const code = `loop: while (condition) {
+  // Continue to label
+  if (skip) continue loop;
+}`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('loop: while');
+      expect(result.code).toContain('continue loop;');
+      expect(result.code).not.toContain('// Continue to label');
+    });
+  });
+
+  // ============================================================================
+  // 10. TypeScript: Type Assertions
+  // ============================================================================
+  describe('TypeScript - Type Assertions', () => {
+    test('type assertion with "as" keyword', () => {
+      const code = `// Type assertion
+const value = input as string; // Cast to string`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('input as string;');
+      expect(result.code).not.toContain('// Type assertion');
+      expect(result.code).not.toContain('// Cast to string');
+    });
+
+    test('type assertion with angle brackets', () => {
+      const code = `// Old-style assertion
+const value = <string>input; // Cast to string`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('<string>input;');
+      expect(result.code).not.toContain('// Old-style');
+      expect(result.code).not.toContain('// Cast to string');
+    });
+
+    test('const assertion', () => {
+      const code = `// Const assertion
+const config = { mode: 'production' } as const; // Readonly`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('} as const;');
+      expect(result.code).not.toContain('// Const assertion');
+      expect(result.code).not.toContain('// Readonly');
+    });
+
+    test('non-null assertion', () => {
+      const code = `// Non-null assertion
+const value = maybeNull!; // Assert not null`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('maybeNull!;');
+      expect(result.code).not.toContain('// Non-null');
+      expect(result.code).not.toContain('// Assert not null');
+    });
+  });
+
+  // ============================================================================
+  // 11. TypeScript: Namespaces and Modules
+  // ============================================================================
+  describe('TypeScript - Namespaces and Modules', () => {
+    test('namespace declaration', () => {
+      const code = `// Namespace
+namespace MyNamespace {
+  // Exported function
+  export function doSomething() {}
+}`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('namespace MyNamespace');
+      expect(result.code).toContain('export function doSomething()');
+      expect(result.code).not.toContain('// Namespace');
+      expect(result.code).not.toContain('// Exported function');
+    });
+
+    test('module augmentation', () => {
+      const code = `// Module augmentation
+declare module 'existing-module' {
+  // Add new interface
+  export interface NewInterface {}
+}`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('declare module');
+      expect(result.code).toContain('export interface NewInterface');
+      expect(result.code).not.toContain('// Module augmentation');
+      expect(result.code).not.toContain('// Add new interface');
+    });
+
+    test('namespace merging', () => {
+      const code = `namespace Utils {
+  // First declaration
+  export const version = '1.0';
+}
+
+namespace Utils {
+  // Merged declaration
+  export function log() {}
+}`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('namespace Utils');
+      expect(result.code).not.toContain('// First declaration');
+      expect(result.code).not.toContain('// Merged declaration');
+    });
+  });
+
+  // ============================================================================
+  // 12. TypeScript: Enums
+  // ============================================================================
+  describe('TypeScript - Enums', () => {
+    test('numeric enum with inline comments', () => {
+      const code = `// Color enum
+enum Color {
+  Red = 1, // Red color
+  Green = 2, // Green color
+  Blue = 3 // Blue color
+}`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('enum Color');
+      expect(result.code).toContain('Red = 1,');
+      expect(result.code).toContain('Green = 2,');
+      expect(result.code).toContain('Blue = 3');
+      expect(result.code).not.toContain('// Color enum');
+      expect(result.code).not.toContain('// Red color');
+    });
+
+    test('string enum', () => {
+      const code = `enum Direction {
+  // Cardinal directions
+  North = "NORTH", // North direction
+  South = "SOUTH", // South direction
+}`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('North = "NORTH"');
+      expect(result.code).not.toContain('// Cardinal');
+      expect(result.code).not.toContain('// North direction');
+    });
+
+    test('const enum', () => {
+      const code = `// Const enum for performance
+const enum Status {
+  Active = 1, // Active status
+  Inactive = 0 // Inactive status
+}`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('const enum Status');
+      expect(result.code).not.toContain('// Const enum');
+      expect(result.code).not.toContain('// Active status');
+    });
+
+    test('computed enum members', () => {
+      const code = `enum FileAccess {
+  None = 0,
+  Read = 1 << 1, // Bitwise shift
+  Write = 1 << 2, // Bitwise shift
+}`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('1 << 1,');
+      expect(result.code).not.toContain('// Bitwise shift');
+    });
+  });
+
+  // ============================================================================
+  // 13. TypeScript: Union and Intersection Types
+  // ============================================================================
+  describe('TypeScript - Union and Intersection Types', () => {
+    test('union type with comments', () => {
+      const code = `// Union type
+type Result = Success | Error; // Success or Error`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('type Result = Success | Error;');
+      expect(result.code).not.toContain('// Union type');
+      expect(result.code).not.toContain('// Success or Error');
+    });
+
+    test('intersection type with comments', () => {
+      const code = `// Intersection type
+type Combined = TypeA & TypeB; // Both types`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('type Combined = TypeA & TypeB;');
+      expect(result.code).not.toContain('// Intersection');
+      expect(result.code).not.toContain('// Both types');
+    });
+
+    test('complex union type', () => {
+      const code = `type Status = 
+  | "pending"   // Pending state
+  | "success"   // Success state
+  | "error";    // Error state`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('"pending"');
+      expect(result.code).toContain('"success"');
+      expect(result.code).toContain('"error"');
+      expect(result.code).not.toContain('// Pending state');
+    });
+
+    test('discriminated union', () => {
+      const code = `// Discriminated union
+type Shape =
+  | { kind: "circle"; radius: number }   // Circle
+  | { kind: "square"; size: number };    // Square`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('kind: "circle"');
+      expect(result.code).toContain('kind: "square"');
+      expect(result.code).not.toContain('// Discriminated union');
+      expect(result.code).not.toContain('// Circle');
+      expect(result.code).not.toContain('// Square');
+    });
+  });
+
+  // ============================================================================
+  // 14. TypeScript: Conditional Types
+  // ============================================================================
+  describe('TypeScript - Conditional Types', () => {
+    test('basic conditional type', () => {
+      const code = `// Conditional type
+type Check<T> = T extends string ? true : false; // String check`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('T extends string ? true : false;');
+      expect(result.code).not.toContain('// Conditional type');
+      expect(result.code).not.toContain('// String check');
+    });
+
+    test('nested conditional type', () => {
+      const code = `type TypeName<T> =
+  // Check types
+  T extends string ? "string" : // String type
+  T extends number ? "number" : // Number type
+  "unknown"; // Unknown type`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('T extends string ? "string"');
+      expect(result.code).toContain('T extends number ? "number"');
+      expect(result.code).not.toContain('// Check types');
+      expect(result.code).not.toContain('// String type');
+    });
+
+    test('infer keyword in conditional type', () => {
+      const code = `// Extract return type
+type ReturnType<T> = T extends (...args: any) => infer R ? R : never;`;
+      const result = removeComments(code, { language: 'typescript' });
+      
+      expect(result.code).toContain('infer R ? R : never;');
+      expect(result.code).not.toContain('// Extract return type');
+    });
+  });
+
+  // ============================================================================
+  // 15. keepEmptyLines Option - Consecutive Comments
+  // ============================================================================
+  describe('keepEmptyLines Option - Consecutive Comments', () => {
+    test('preserves empty lines with keepEmptyLines=true', () => {
+      const code = `// Comment 1
+
+// Comment 2
+
+const x = 5;`;
+      const result = removeComments(code, {
+        language: 'javascript',
+        keepEmptyLines: true
+      });
+      
+      // Should preserve empty lines where comments were
+      expect(result.code).toContain('\n\n');
+      expect(result.code).not.toContain('// Comment');
+    });
+
+    test('removes empty lines with keepEmptyLines=false (default)', () => {
+      const code = `// Comment 1
+
+// Comment 2
+
+const x = 5;`;
+      const result = removeComments(code, {
+        language: 'javascript',
+        keepEmptyLines: false
+      });
+      
+      // Should NOT have excessive empty lines
+      expect(result.code.trim()).toContain('const x = 5;');
+    });
+
+    test('three consecutive comments with keepEmptyLines', () => {
+      const code = `// Comment 1
+// Comment 2
+// Comment 3
+const x = 5;`;
+      const result = removeComments(code, {
+        language: 'javascript',
+        keepEmptyLines: true
+      });
+      
+      expect(result.code).not.toContain('// Comment');
+      expect(result.code).toContain('const x = 5;');
+    });
+
+    test('multiple comment blocks with keepEmptyLines', () => {
+      const code = `// Block 1
+
+const a = 1;
+
+// Block 2
+
+const b = 2;`;
+      const result = removeComments(code, {
+        language: 'javascript',
+        keepEmptyLines: true
+      });
+      
+      expect(result.code).toContain('const a = 1;');
+      expect(result.code).toContain('const b = 2;');
+      expect(result.code).not.toContain('// Block');
+    });
+  });
+
+  // ============================================================================
+  // 16. keepEmptyLines - Comments in Complex Structures
+  // ============================================================================
+  describe('keepEmptyLines - Comments in Arrays and Objects', () => {
+    test('comments in array with keepEmptyLines', () => {
+      const code = `const arr = [
+  1, // First
+  2, // Second
+  3  // Third
+];`;
+      const result = removeComments(code, {
+        language: 'javascript',
+        keepEmptyLines: true
+      });
+      
+      expect(result.code).toContain('1,');
+      expect(result.code).toContain('2,');
+      expect(result.code).toContain('3');
+      expect(result.code).not.toContain('// First');
+    });
+
+    test('comments in object with keepEmptyLines', () => {
+      const code = `const obj = {
+  // Property 1
+  name: "John",
+  // Property 2
+  age: 30
+};`;
+      const result = removeComments(code, {
+        language: 'javascript',
+        keepEmptyLines: true
+      });
+      
+      expect(result.code).toContain('name: "John"');
+      expect(result.code).toContain('age: 30');
+      expect(result.code).not.toContain('// Property');
+    });
+
+    test('comments between function parameters', () => {
+      const code = `function test(
+  // First param
+  a,
+  // Second param
+  b,
+  // Third param
+  c
+) {}`;
+      const result = removeComments(code, {
+        language: 'javascript',
+        keepEmptyLines: true
+      });
+      
+      expect(result.code).toContain('a,');
+      expect(result.code).toContain('b,');
+      expect(result.code).toContain('c');
+      expect(result.code).not.toContain('// First param');
+    });
+  });
+
+  // ============================================================================
+  // 17. End-of-File Comments
+  // ============================================================================
+  describe('End-of-File Comments', () => {
+    test('single comment at end of file', () => {
+      const code = `const x = 5;
+// End of file comment`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code).toContain('const x = 5;');
+      expect(result.code).not.toContain('// End of file');
+    });
+
+    test('multiple comments at end of file', () => {
+      const code = `const x = 5;
+// Comment 1
+// Comment 2
+// Comment 3`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code.trim()).toContain('const x = 5;');
+      expect(result.code).not.toContain('// Comment');
+    });
+
+    test('end-of-file comment with keepEmptyLines', () => {
+      const code = `const x = 5;
+// End comment`;
+      const result = removeComments(code, {
+        language: 'javascript',
+        keepEmptyLines: true
+      });
+      
+      expect(result.code).toContain('const x = 5;');
+      expect(result.code).not.toContain('// End comment');
+    });
+
+    test('only comments in file', () => {
+      const code = `// Comment 1
+// Comment 2
+// Comment 3`;
+      const result = removeComments(code, { language: 'javascript' });
+      
+      expect(result.code.trim().length).toBeLessThan(code.length);
+    });
+  });
+});
+
+describe('Python Remover - Advanced Edge Cases', () => {
+  
+  // ============================================================================
+  // 1. Triple Quotes - Single vs Double
+  // ============================================================================
+  describe('Triple Quotes - Single vs Double', () => {
+    test('triple double quotes docstring', () => {
+      const code = `def hello():
+    """This is a docstring"""
+    return "Hello"`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('def hello():');
+      expect(result.code).toContain('return "Hello"');
+      expect(result.code).not.toContain('docstring');
+    });
+
+    test('triple single quotes docstring', () => {
+      const code = `def hello():
+    '''This is a docstring'''
+    return "Hello"`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('def hello():');
+      expect(result.code).not.toContain('docstring');
+    });
+
+    test('multi-line triple double quotes', () => {
+      const code = `def hello():
+    """
+    This is a
+    multi-line docstring
+    with multiple lines
+    """
+    return "Hello"`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('def hello():');
+      expect(result.code).toContain('return "Hello"');
+      expect(result.code).not.toContain('multi-line docstring');
+    });
+
+    test('multi-line triple single quotes', () => {
+      const code = `def hello():
+    '''
+    Multi-line with
+    single quotes
+    '''
+    return "Hello"`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).not.toContain('Multi-line with');
+    });
+
+    test('triple quotes as regular string (not docstring)', () => {
+      const code = `x = 5
+text = """This is just a string"""
+y = 10`;
+      const result = removeComments(code, { language: 'python' });
+      
+      // If it's NOT a docstring (after def/class), keep it
+      expect(result.code).toContain('text = """This is just a string"""');
+    });
+
+    test('mixed triple quotes in same file', () => {
+      const code = `def func1():
+    """Double quote docstring"""
+    pass
+
+def func2():
+    '''Single quote docstring'''
+    pass`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('def func1():');
+      expect(result.code).toContain('def func2():');
+      expect(result.code).not.toContain('Double quote');
+      expect(result.code).not.toContain('Single quote');
+    });
+  });
+
+  // ============================================================================
+  // 2. F-strings with # Inside
+  // ============================================================================
+  describe('F-strings with # Character', () => {
+    test('f-string with # in text', () => {
+      const code = `name = "Alice"
+msg = f"User #{user_id}: {name}"
+# Real comment
+print(msg)`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('f"User #{user_id}: {name}"');
+      expect(result.code).not.toContain('# Real comment');
+    });
+
+    test('f-string with hashtag', () => {
+      const code = `tag = f"#python #coding"
+# This is a comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('f"#python #coding"');
+      expect(result.code).not.toContain('# This is a comment');
+    });
+
+    test('multi-line f-string with #', () => {
+      const code = `msg = f"""
+User: {name}
+Tag: #awesome
+Score: {score}
+"""
+# Comment after`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('Tag: #awesome');
+      expect(result.code).not.toContain('# Comment after');
+    });
+
+    test('nested f-string expressions', () => {
+      const code = `result = f"Value: {f'\\#{x}'}"
+# Comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain("f\"Value: {f'\\#{x}'}\"");
+      expect(result.code).not.toContain('# Comment');
+    });
+
+    test('f-string with escaped characters', () => {
+      const code = `text = f"Line 1\\nLine 2 \\#tag"
+# Real comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('\\nLine 2 \\#tag');
+      expect(result.code).not.toContain('# Real comment');
+    });
+
+    test('f-string with format specifiers', () => {
+      const code = `amount = 10
+price = f\`${'${amount:.2f} \\#sale'}\`
+# Comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain(':.2f} \\#sale');
+      expect(result.code).not.toContain('# Comment');
+    });
+  });
+
+  // ============================================================================
+  // 3. Raw Strings with # Inside
+  // ============================================================================
+  describe('Raw Strings (r-prefix)', () => {
+    test('raw string with # character', () => {
+      const code = `pattern = r"\\d+ # not a comment"
+# Real comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('r"\\d+ # not a comment"');
+      expect(result.code).not.toContain('# Real comment');
+    });
+
+    test('raw f-string (rf prefix)', () => {
+      const code = `path = rf"C:\\Users\\{username}\\#data"
+# Comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('rf"C:\\Users\\{username}\\#data"');
+      expect(result.code).not.toContain('# Comment');
+    });
+
+    test('raw string with backslashes and #', () => {
+      const code = `regex = r"\\w+\\s+#\\d+"
+# Pattern comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('r"\\w+\\s+#\\d+"');
+      expect(result.code).not.toContain('# Pattern comment');
+    });
+
+    test('raw byte string', () => {
+      const code = `data = rb"Binary #data \\x00"
+# Comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('rb"Binary #data');
+      expect(result.code).not.toContain('# Comment');
+    });
+
+    test('raw multi-line string', () => {
+      const code = `text = r"""
+Line 1 # not comment
+Line 2 # also not comment
+"""
+# Real comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('Line 1 # not comment');
+      expect(result.code).not.toContain('# Real comment');
+    });
+  });
+
+  // ============================================================================
+  // 4. Byte Strings
+  // ============================================================================
+  describe('Byte Strings (b-prefix)', () => {
+    test('byte string with # character', () => {
+      const code = `data = b"Binary #data"
+# Comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('b"Binary #data"');
+      expect(result.code).not.toContain('# Comment');
+    });
+
+    test('byte string with escape sequences', () => {
+      const code = `data = b"\\x00\\x01 #marker"
+# Comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('#marker');
+      expect(result.code).not.toContain('# Comment');
+    });
+  });
+
+  // ============================================================================
+  // 5. Docstrings in Various Contexts
+  // ============================================================================
+  describe('Docstrings in Different Contexts', () => {
+    test('module-level docstring (first line)', () => {
+      const code = `"""Module docstring
+This describes the module
+"""
+import sys
+# Comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('import sys');
+      expect(result.code).not.toContain('# Comment');
+      // Module docstring might be removed or kept depending on logic
+    });
+
+    test('class docstring', () => {
+      const code = `class MyClass:
+    """Class docstring"""
+    def __init__(self):
+        pass`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('class MyClass:');
+      expect(result.code).toContain('def __init__');
+      expect(result.code).not.toContain('Class docstring');
+    });
+
+    test('nested function docstring', () => {
+      const code = `def outer():
+    """Outer docstring"""
+    def inner():
+        """Inner docstring"""
+        return 42
+    return inner()`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('def outer():');
+      expect(result.code).toContain('def inner():');
+      expect(result.code).not.toContain('Outer docstring');
+      expect(result.code).not.toContain('Inner docstring');
+    });
+
+    test('property docstring', () => {
+      const code = `class User:
+    @property
+    def name(self):
+        """Property docstring"""
+        return self._name`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('@property');
+      expect(result.code).toContain('def name(self):');
+      expect(result.code).not.toContain('Property docstring');
+    });
+
+    test('async function docstring', () => {
+      const code = `async def fetch_data():
+    """Async function docstring"""
+    return await get_data()`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('async def fetch_data():');
+      expect(result.code).not.toContain('Async function docstring');
+    });
+
+    test('lambda (no docstring support)', () => {
+      const code = `# Lambda function
+func = lambda x: x * 2
+# Comment after`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('func = lambda x: x * 2');
+      expect(result.code).not.toContain('# Lambda');
+      expect(result.code).not.toContain('# Comment after');
+    });
+
+    test('__init__ method docstring', () => {
+      const code = `class User:
+    def __init__(self, name):
+        """Constructor docstring"""
+        self.name = name`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('def __init__');
+      expect(result.code).not.toContain('Constructor docstring');
+    });
+  });
+
+  // ============================================================================
+  // 6. Comments After Colon
+  // ============================================================================
+  describe('Comments Immediately After Colon', () => {
+    test('comment after function definition colon', () => {
+      const code = `def hello(): # Comment after colon
+    return "Hello"`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('def hello():');
+      expect(result.code).not.toContain('# Comment after colon');
+    });
+
+    test('comment after class definition colon', () => {
+      const code = `class MyClass: # Comment
+    pass`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('class MyClass:');
+      expect(result.code).not.toContain('# Comment');
+    });
+
+    test('comment after if statement colon', () => {
+      const code = `if x > 5: # Check condition
+    print("Yes")`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('if x > 5:');
+      expect(result.code).not.toContain('# Check condition');
+    });
+
+    test('comment after for loop colon', () => {
+      const code = `for i in range(10): # Loop comment
+    print(i)`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('for i in range(10):');
+      expect(result.code).not.toContain('# Loop comment');
+    });
+
+    test('comment after while loop colon', () => {
+      const code = `while condition: # While comment
+    do_something()`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('while condition:');
+      expect(result.code).not.toContain('# While comment');
+    });
+
+    test('comment after try/except colon', () => {
+      const code = `try: # Try block
+    risky_operation()
+except Exception: # Catch block
+    handle_error()`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('try:');
+      expect(result.code).toContain('except Exception:');
+      expect(result.code).not.toContain('# Try block');
+      expect(result.code).not.toContain('# Catch block');
+    });
+  });
+
+  // ============================================================================
+  // 7. Decorators with Comments
+  // ============================================================================
+  describe('Decorators', () => {
+    test('decorator with comment above', () => {
+      const code = `# Decorator comment
+@property
+def name(self):
+    return self._name`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('@property');
+      expect(result.code).toContain('def name(self):');
+      expect(result.code).not.toContain('# Decorator comment');
+    });
+
+    test('decorator with inline comment', () => {
+      const code = `@staticmethod # Static method
+def helper():
+    pass`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('@staticmethod');
+      expect(result.code).not.toContain('# Static method');
+    });
+
+    test('multiple decorators with comments', () => {
+      const code = `# First decorator
+@decorator1
+# Second decorator
+@decorator2
+def func():
+    pass`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('@decorator1');
+      expect(result.code).toContain('@decorator2');
+      expect(result.code).not.toContain('# First');
+      expect(result.code).not.toContain('# Second');
+    });
+
+    test('decorator with arguments', () => {
+      const code = `@app.route('/home') # Route decorator
+def home():
+    return "Home"`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain("@app.route('/home')");
+      expect(result.code).not.toContain('# Route decorator');
+    });
+
+    test('class decorator', () => {
+      const code = `# Dataclass decorator
+@dataclass
+class User:
+    name: str`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('@dataclass');
+      expect(result.code).toContain('class User:');
+      expect(result.code).not.toContain('# Dataclass');
+    });
+  });
+
+  // ============================================================================
+  // 8. Multi-line Statements with Comments
+  // ============================================================================
+  describe('Multi-line Statements', () => {
+    test('multi-line function call with comments', () => {
+      const code = `result = function_call(
+    arg1,  # First argument
+    arg2,  # Second argument
+    arg3   # Third argument
+)`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('arg1,');
+      expect(result.code).toContain('arg2,');
+      expect(result.code).toContain('arg3');
+      expect(result.code).not.toContain('# First argument');
+    });
+
+    test('multi-line list with comments', () => {
+      const code = `items = [
+    1,  # First
+    2,  # Second
+    3,  # Third
+]`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('1,');
+      expect(result.code).toContain('2,');
+      expect(result.code).toContain('3,');
+      expect(result.code).not.toContain('# First');
+    });
+
+    test('multi-line dictionary with comments', () => {
+      const code = `config = {
+    # Key 1
+    'name': 'John',
+    # Key 2
+    'age': 30,
+}`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain("'name': 'John'");
+      expect(result.code).toContain("'age': 30");
+      expect(result.code).not.toContain('# Key 1');
+      expect(result.code).not.toContain('# Key 2');
+    });
+
+    test('multi-line import with comments', () => {
+      const code = `from module import (
+    function1,  # Import function1
+    function2,  # Import function2
+    function3   # Import function3
+)`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('function1,');
+      expect(result.code).toContain('function2,');
+      expect(result.code).toContain('function3');
+      expect(result.code).not.toContain('# Import function');
+    });
+  });
+
+  // ============================================================================
+  // 9. Backslash Line Continuation
+  // ============================================================================
+  describe('Backslash Line Continuation', () => {
+    test('line continuation with comment', () => {
+      const code = `result = value1 + \\
+    value2 + \\  # Comment on continuation
+    value3`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('value1 +');
+      expect(result.code).toContain('value2 +');
+      expect(result.code).toContain('value3');
+      expect(result.code).not.toContain('# Comment on continuation');
+    });
+
+    test('string continuation with backslash', () => {
+      const code = `text = "Line 1 " \\
+    "Line 2"  # Comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('"Line 1 "');
+      expect(result.code).toContain('"Line 2"');
+      expect(result.code).not.toContain('# Comment');
+    });
+
+    test('long condition with continuation', () => {
+      const code = `if condition1 and \\
+   condition2 and \\  # Check conditions
+   condition3:
+    pass`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('condition1 and');
+      expect(result.code).toContain('condition2 and');
+      expect(result.code).not.toContain('# Check conditions');
+    });
+  });
+
+  // ============================================================================
+  // 10. Semicolon-separated Statements
+  // ============================================================================
+  describe('Semicolon-separated Statements', () => {
+    test('multiple statements on one line', () => {
+      const code = `x = 1; y = 2; z = 3  # Comment`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('x = 1; y = 2; z = 3');
+      expect(result.code).not.toContain('# Comment');
+    });
+
+    test('semicolon with comment after each statement', () => {
+      const code = `x = 1  # First
+y = 2; z = 3  # Second and third`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('x = 1');
+      expect(result.code).toContain('y = 2; z = 3');
+      expect(result.code).not.toContain('# First');
+      expect(result.code).not.toContain('# Second');
+    });
+  });
+
+  // ============================================================================
+  // 11. keepEmptyLines Option with Python
+  // ============================================================================
+  describe('keepEmptyLines Option', () => {
+    test('preserves empty lines with keepEmptyLines=true', () => {
+      const code = `# Comment 1
+
+# Comment 2
+
+x = 5`;
+      const result = removeComments(code, {
+        language: 'python',
+        keepEmptyLines: true
+      });
+      
+      expect(result.code).not.toContain('# Comment');
+      expect(result.code).toContain('x = 5');
+      // Should have empty lines
+      expect(result.code).toContain('\n\n');
+    });
+
+    test('removes empty lines with keepEmptyLines=false (default)', () => {
+      const code = `# Comment 1
+
+# Comment 2
+
+x = 5`;
+      const result = removeComments(code, {
+        language: 'python',
+        keepEmptyLines: false
+      });
+      
+      expect(result.code).not.toContain('# Comment');
+      expect(result.code).toContain('x = 5');
+    });
+
+    test('keepEmptyLines with docstrings', () => {
+      const code = `\# Comment before
+
+def hello():
+    """Docstring"""
+    return "Hello"
+
+\# Comment after`;
+      const result = removeComments(code, {
+        language: 'python',
+        keepEmptyLines: true
+      });
+      
+      expect(result.code).toContain('def hello():');
+      expect(result.code).not.toContain('# Comment');
+      expect(result.code).not.toContain('Docstring');
+    });
+
+    test('consecutive comments with keepEmptyLines', () => {
+      const code = `\# Comment 1
+\# Comment 2
+\# Comment 3
+x = 5`;
+      const result = removeComments(code, {
+        language: 'python',
+        keepEmptyLines: true
+      });
+      
+      expect(result.code).not.toContain('# Comment');
+      expect(result.code).toContain('x = 5');
+    });
+  });
+
+// ============================================================================
+// 12. License Comments (preserveLicense option)
+// ============================================================================
+describe('License Comments Preservation', () => {
+  test('preserves copyright comment', () => {
+    const code = `\# Copyright (c) 2024 Company Name
+\# Regular comment
+x = 5`;
+    const result = removeComments(code, {
+      language: 'python',
+      preserveLicense: true
+    });
+    
+    expect(result.code).toContain('Copyright');
+    expect(result.code).not.toContain('Regular comment');
+  });
+
+  test('preserves license keyword', () => {
+    const code = `\# This file is licensed under MIT License
+\# Another comment
+def func():
+    pass`;
+    const result = removeComments(code, {
+      language: 'python',
+      preserveLicense: true
+    });
+    
+    expect(result.code).toContain('licensed under MIT License');
+    expect(result.code).not.toContain('Another comment');
+  });
+
+  test('preserves author comment', () => {
+    const code = `\# Author: John Doe
+\# Regular comment
+x = 5`;
+    const result = removeComments(code, {
+      language: 'python',
+      preserveLicense: true
+    });
+    
+    expect(result.code).toContain('Author:');
+    expect(result.code).not.toContain('Regular comment');
+  });
+
+  test('preserves license in docstring', () => {
+    const code = `"""
+Copyright (c) 2024
+MIT License
+"""
+\# Regular comment
+import sys`;
+    const result = removeComments(code, {
+      language: 'python',
+      preserveLicense: true
+    });
+    
+    expect(result.code).toContain('Copyright');
+    expect(result.code).not.toContain('Regular comment');
+  });
+
+  test('case-insensitive license detection', () => {
+    const code = `\# COPYRIGHT 2024
+\# LICENCE information
+\# regular comment
+x = 5`;
+    const result = removeComments(code, {
+      language: 'python',
+      preserveLicense: true
+    });
+    
+    expect(result.code).toContain('COPYRIGHT');
+    expect(result.code).toContain('LICENCE');
+    expect(result.code).not.toContain('regular comment');
+  });
+});
+
+// ============================================================================
+// 13. Edge Cases with Quotes
+// ============================================================================
+describe('Edge Cases with Quotes', () => {
+  test('escaped quotes in string with #', () => {
+    const code = `text = "He said \\"Hello #world\\""
+# Comment`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('\\"Hello #world\\"');
+    expect(result.code).not.toContain('# Comment');
+  });
+
+  test('single quote inside double quote string', () => {
+    const code = `text = "It's a #test"
+# Comment`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain("It's a #test");
+    expect(result.code).not.toContain('# Comment');
+  });
+
+  test('double quote inside single quote string', () => {
+    const code = `text = 'He said "#hello"'
+# Comment`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('He said "#hello"');
+    expect(result.code).not.toContain('# Comment');
+  });
+
+  test('multiple strings with # on same line', () => {
+    const code = `a = "#tag1"; b = "#tag2"  # Comment`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('"#tag1"');
+    expect(result.code).toContain('"#tag2"');
+    expect(result.code).not.toContain('# Comment');
+  });
+
+  test('empty strings with comment', () => {
+    const code = `empty1 = ""; empty2 = ''  # Comment`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('empty1 = ""');
+    expect(result.code).toContain("empty2 = ''");
+    expect(result.code).not.toContain('# Comment');
+  });
+});
+
+// ============================================================================
+// 14. Inline Comments at Various Positions
+// ============================================================================
+describe('Inline Comments Positioning', () => {
+  test('comment after simple assignment', () => {
+    const code = `x = 5  # Initialize x`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('x = 5');
+    expect(result.code).not.toContain('# Initialize');
+  });
+
+  test('comment after function call', () => {
+    const code = `result = func(arg)  # Call function`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('result = func(arg)');
+    expect(result.code).not.toContain('# Call function');
+  });
+
+  test('comment after return statement', () => {
+    const code = `def test():
+    return 42  # Return value`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('return 42');
+    expect(result.code).not.toContain('# Return value');
+  });
+
+  test('comment after import', () => {
+    const code = `import sys  # System module`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('import sys');
+    expect(result.code).not.toContain('# System module');
+  });
+
+  test('comment after pass statement', () => {
+    const code = `def stub():
+    pass  # Not implemented yet`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('pass');
+    expect(result.code).not.toContain('# Not implemented');
+  });
+
+  test('multiple inline comments', () => {
+    const code = `x = 1  # First
+y = 2  # Second
+z = 3  # Third`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('x = 1');
+    expect(result.code).toContain('y = 2');
+    expect(result.code).toContain('z = 3');
+    expect(result.code).not.toContain('# First');
+    expect(result.code).not.toContain('# Second');
+    expect(result.code).not.toContain('# Third');
+  });
+});
+
+// ============================================================================
+// 15. Complex Real-World Examples
+// ============================================================================
+describe('Complex Real-World Python Code', () => {
+  test('class with multiple methods and docstrings', () => {
+    const code = `# User class
+class User:
+    """User management class"""
+    
+    def __init__(self, name):
+        """Initialize user"""
+        self.name = name  # User name
+    
+    @property
+    def display_name(self):
+        """Get display name"""
+        return f"User: {self.name}"  # Format name`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('class User:');
+    expect(result.code).toContain('def __init__');
+    expect(result.code).toContain('@property');
+    expect(result.code).not.toContain('# User class');
+    expect(result.code).not.toContain('User management class');
+    expect(result.code).not.toContain('# User name');
+    expect(result.code).not.toContain('Get display name');
+  });
+
+  test('async function with try-except', () => {
+    const code = `# Async data fetcher
+async def fetch_data(url):
+    """Fetch data from URL"""
+    try:
+        # Attempt to fetch
+        response = await http.get(url)
+        return response.json()  # Parse JSON
+    except Exception as e:
+        # Handle error
+        logger.error(f"Failed: {e}")  # Log error
+        return None`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('async def fetch_data(url):');
+    expect(result.code).toContain('try:');
+    expect(result.code).toContain('except Exception as e:');
+    expect(result.code).not.toContain('# Async data fetcher');
+    expect(result.code).not.toContain('Fetch data from URL');
+    expect(result.code).not.toContain('# Attempt to fetch');
+    expect(result.code).not.toContain('# Handle error');
+  });
+
+  test('list comprehension with filter', () => {
+    const code = `# Filter even numbers
+even = [x for x in range(10) if x % 2 == 0]  # Even only
+# Process results
+print(even)`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('[x for x in range(10) if x % 2 == 0]');
+    expect(result.code).not.toContain('# Filter');
+    expect(result.code).not.toContain('# Even only');
+    expect(result.code).not.toContain('# Process');
+  });
+
+  test('context manager with multiple statements', () => {
+    const code = `# File operations
+with open('file.txt', 'r') as f:  # Open file
+    # Read content
+    content = f.read()
+    # Process content
+    lines = content.split('\\n')  # Split lines
+# End of with block`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain("with open('file.txt', 'r') as f:");
+    expect(result.code).toContain('content = f.read()');
+    expect(result.code).not.toContain('# File operations');
+    expect(result.code).not.toContain('# Open file');
+    expect(result.code).not.toContain('# Read content');
+  });
+
+  test('decorator chain with function', () => {
+    const code = `# API endpoint
+@app.route('/api/users')  # Route
+@login_required  # Auth
+@rate_limit(100)  # Rate limiting
+def get_users():
+    """Get all users"""
+    # Query database
+    users = db.query(User).all()  # Fetch all
+    return jsonify(users)  # Return JSON`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain("@app.route('/api/users')");
+    expect(result.code).toContain('@login_required');
+    expect(result.code).toContain('@rate_limit(100)');
+    expect(result.code).not.toContain('# API endpoint');
+    expect(result.code).not.toContain('# Route');
+    expect(result.code).not.toContain('Get all users');
+    expect(result.code).not.toContain('# Query database');
+  });
+});
+
+// ============================================================================
+// 16. Pathological Cases
+// ============================================================================
+describe('Pathological and Edge Cases', () => {
+  test('only comments in file', () => {
+    const code = `\# Comment 1
+\# Comment 2
+\# Comment 3`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code.trim().length).toBeLessThan(code.length);
+  });
+
+  test('empty file', () => {
+    const code = '';
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toBe('');
+  });
+
+  test('only whitespace', () => {
+    const code = '   \n\t\n   ';
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code.trim()).toBe('');
+  });
+
+  test('extremely long comment', () => {
+    const longComment = '# ' + 'x'.repeat(10000);
+    const code = `${longComment}\nx = 5`;
+    const result = removeComments(code, { language: 'python' });
+    
+    expect(result.code).toContain('x = 5');
+    expect(result.code.length).toBeLessThan(code.length);
+  });
+
+  test('deeply nested structures', () => {
+    const code = `# Outer
+def outer():
+    # Middle
+    def middle():
+        # Inner
+        def inner():
+            # Deepest
+            return 42
+        return inner()
+    return middle()`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('def outer():');
+      expect(result.code).toContain('def middle():');
+      expect(result.code).toContain('def inner():');
+      expect(result.code).not.toContain('# Outer');
+      expect(result.code).not.toContain('# Middle');
+      expect(result.code).not.toContain('# Inner');
+      expect(result.code).not.toContain('# Deepest');
+    });
+
+    test('unicode in comments and strings', () => {
+      const code = `# Коментар на кирилица
+text = "Текст на кирилица #тег"
+# 中文注释
+name = "名字 #标签"`;
+      const result = removeComments(code, { language: 'python' });
+      
+      expect(result.code).toContain('Текст на кирилица #тег');
+      expect(result.code).toContain('名字 #标签');
+      expect(result.code).not.toContain('Коментар');
+      expect(result.code).not.toContain('中文注释');
+    });
+  });
+});
