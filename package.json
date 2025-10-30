@@ -1,0 +1,53 @@
+{
+  "name": "universal-comment-remover",
+  "version": "1.0.0",
+  "description": "Universal comment remover for multiple programming languages with TypeScript support",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "clean": "rm -rf ./dist",
+    "build": "npm run clean && tsc",
+    "prepack": "npm run build",
+    "test": "jest",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "comment",
+    "remover",
+    "typescript",
+    "javascript",
+    "python",
+    "java",
+    "csharp",
+    "html",
+    "css",
+    "sql",
+    "yaml",
+    "code-cleanup"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/universal-comment-remover.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/universal-comment-remover/issues"
+  },
+  "homepage": "https://github.com/yourusername/universal-comment-remover#readme",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.9.2",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "strip-comments": "^2.0.1"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

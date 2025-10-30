@@ -1,0 +1,48 @@
+# Source files (публикуваме само dist/)
+src/
+test/
+*.test.ts
+*.spec.ts
+
+# Config files
+tsconfig.json
+jest.config.js
+.eslintrc*
+.prettierrc*
+
+# CI/CD
+.github/
+.travis.yml
+.gitlab-ci.yml
+
+# Documentation (освен README)
+docs/
+examples/
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temp files
+*.tmp
+.cache/
+temp/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Development
+node_modules/
