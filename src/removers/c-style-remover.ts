@@ -4,40 +4,60 @@ import { removeJavaScriptComments } from './javascript-remover';
  * Removes comments from Java code (uses C-style comments)
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removeJavaComments(code: string, preserveLicense: boolean = false): string {
-  return removeJavaScriptComments(code, preserveLicense);
+export function removeJavaComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
+  return removeJavaScriptComments(code, preserveLicense, keepEmptyLines);
 }
 
 /**
  * Removes comments from C# code (uses C-style comments)
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removeCSharpComments(code: string, preserveLicense: boolean = false): string {
-  return removeJavaScriptComments(code, preserveLicense);
+export function removeCSharpComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
+  return removeJavaScriptComments(code, preserveLicense, keepEmptyLines);
 }
 
 /**
  * Removes comments from C code (uses C-style comments)
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removeCComments(code: string, preserveLicense: boolean = false): string {
-  return removeJavaScriptComments(code, preserveLicense);
+export function removeCComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
+  return removeJavaScriptComments(code, preserveLicense, keepEmptyLines);
 }
 
 /**
  * Removes comments from C++ code (uses C-style comments)
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removeCppComments(code: string, preserveLicense: boolean = false): string {
-  return removeJavaScriptComments(code, preserveLicense);
+export function removeCppComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
+  return removeJavaScriptComments(code, preserveLicense, keepEmptyLines);
 }
 
 /**
@@ -46,7 +66,11 @@ export function removeCppComments(code: string, preserveLicense: boolean = false
  * @param preserveLicense - Whether to preserve license comments
  * @returns Processed code
  */
-export function removePhpComments(code: string, preserveLicense: boolean = false): string {
+export function removePhpComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
   if (!code) return code;
   
   // PHP uses //, /* */ and # comments
@@ -82,8 +106,10 @@ export function removePhpComments(code: string, preserveLicense: boolean = false
         // The line is *only* a comment
         if (preserveLicense && isLicenseComment(comment)) {
           finalLines.push(line);
+        } else if (keepEmptyLines) {
+          finalLines.push('');
         }
-        // If it's not a license, we skip it (don't add it to the result)
+        // If it's not a license and keepEmptyLines is false, we skip it
       }
     }
   }
@@ -95,30 +121,45 @@ export function removePhpComments(code: string, preserveLicense: boolean = false
  * Removes comments from Go code (uses C-style comments)
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removeGoComments(code: string, preserveLicense: boolean = false): string {
-  return removeJavaScriptComments(code, preserveLicense);
+export function removeGoComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
+  return removeJavaScriptComments(code, preserveLicense, keepEmptyLines);
 }
 
 /**
  * Removes comments from Rust code (uses C-style comments)
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removeRustComments(code: string, preserveLicense: boolean = false): string {
-  return removeJavaScriptComments(code, preserveLicense);
+export function removeRustComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
+  return removeJavaScriptComments(code, preserveLicense, keepEmptyLines);
 }
 
 /**
  * Removes comments from Swift code (uses C-style comments)
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removeSwiftComments(code: string, preserveLicense: boolean = false): string {
-  return removeJavaScriptComments(code, preserveLicense);
+export function removeSwiftComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
+  return removeJavaScriptComments(code, preserveLicense, keepEmptyLines);
 }
 
 /**

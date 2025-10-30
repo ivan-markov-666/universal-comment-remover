@@ -83,72 +83,68 @@ export function removeComments(code: string, options: RemoveOptions = {}): Remov
   
   // Remove comments based on language
   const preserveLicense = options.preserveLicense || false;
+  const keepEmptyLines = options.keepEmptyLines || false;
   let processedCode = code;
   
   try {
     switch (language) {
-      case 'javascript':
-        processedCode = removeJavaScriptComments(code, preserveLicense);
-        break;
-      case 'typescript':
-        processedCode = removeTypeScriptComments(code, preserveLicense);
-        break;
-      case 'python':
-        processedCode = removePythonComments(code, preserveLicense);
-        break;
-      case 'ruby':
-        processedCode = removeRubyComments(code, preserveLicense);
-        break;
-      case 'java':
-        processedCode = removeJavaComments(code, preserveLicense);
-        break;
-      case 'csharp':
-        processedCode = removeCSharpComments(code, preserveLicense);
-        break;
-      case 'c':
-        processedCode = removeCComments(code, preserveLicense);
-        break;
-      case 'cpp':
-        processedCode = removeCppComments(code, preserveLicense);
-        break;
-      case 'html':
-        processedCode = removeHtmlComments(code, preserveLicense);
-        break;
-      case 'css':
-        processedCode = removeCssComments(code, preserveLicense);
-        break;
-      case 'sql':
-        processedCode = removeSqlComments(code, preserveLicense);
-        break;
-      case 'yaml':
-        processedCode = removeYamlComments(code, preserveLicense);
-        break;
-      case 'json':
-        processedCode = removeJsonComments(code, preserveLicense);
-        break;
-      case 'xml':
-        processedCode = removeXmlComments(code, preserveLicense);
-        break;
-      case 'php':
-        processedCode = removePhpComments(code, preserveLicense);
-        break;
-      case 'go':
-        processedCode = removeGoComments(code, preserveLicense);
-        break;
-      case 'rust':
-        processedCode = removeRustComments(code, preserveLicense);
-        break;
-      case 'swift':
-        processedCode = removeSwiftComments(code, preserveLicense);
-        break;
-      default:
-        // Непознат език - връщаме оригиналния код
-        return {
-          code: code,
-          removedCount: 0,
-          detectedLanguage: language
-        };
-    }
+  case 'javascript':
+    processedCode = removeJavaScriptComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'typescript':
+    processedCode = removeTypeScriptComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'python':
+    processedCode = removePythonComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'ruby':
+    processedCode = removeRubyComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'java':
+    processedCode = removeJavaComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'csharp':
+    processedCode = removeCSharpComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'c':
+    processedCode = removeCComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'cpp':
+    processedCode = removeCppComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'php':
+    processedCode = removePhpComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'go':
+    processedCode = removeGoComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'rust':
+    processedCode = removeRustComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'swift':
+    processedCode = removeSwiftComments(code, preserveLicense, keepEmptyLines);
+    break;
+  case 'yaml':
+    processedCode = removeYamlComments(code, preserveLicense, keepEmptyLines);
+    break;
+  
+  // HTML, CSS, SQL, JSON, XML remain UNCHANGED (2 parameters)
+  case 'html':
+    processedCode = removeHtmlComments(code, preserveLicense);
+    break;
+  case 'css':
+    processedCode = removeCssComments(code, preserveLicense);
+    break;
+  case 'sql':
+    processedCode = removeSqlComments(code, preserveLicense);
+    break;
+  case 'json':
+    processedCode = removeJsonComments(code, preserveLicense);
+    break;
+  case 'xml':
+    processedCode = removeXmlComments(code, preserveLicense);
+    break;
+}
   } catch (error) {
     console.error(`Error removing comments for language ${language}:`, error);
     return {
@@ -158,7 +154,7 @@ export function removeComments(code: string, options: RemoveOptions = {}): Remov
     };
   }
   
-  // Изчисляване на броя премахнати коментари
+  // Calculate the number of removed comments
   const removedCount = estimateRemovedComments(code, processedCode);
   
   return {

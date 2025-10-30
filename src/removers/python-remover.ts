@@ -2,9 +2,14 @@
  * Removes comments from Python code
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removePythonComments(code: string, preserveLicense: boolean = false): string {
+export function removePythonComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
   if (!code) return code;
   
   const lines = code.split('\n');
@@ -44,7 +49,9 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
           const isDocstring = beforeQuote.trim().length === 0 && isDocstringContext(lines, i);
           
           if (isDocstring && !preserveLicense) {
-            // Skip this docstring
+            if (keepEmptyLines) {
+              result.push('');
+            }
             continue;
           } else {
             // It's a regular string, keep it
@@ -62,6 +69,8 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
             
             if (!skipDocstring) {
               result.push(line);
+            } else if (keepEmptyLines) {
+              result.push('');
             }
             continue;
           } else {
@@ -89,6 +98,8 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
       // Still in multiline string
       if (!skipDocstring) {
         result.push(line);
+      } else if (keepEmptyLines) {
+        result.push('');
       }
       continue;
     }
@@ -97,6 +108,8 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
     if (trimmed.startsWith('#')) {
       if (preserveLicense && isLicenseComment(trimmed)) {
         result.push(line);
+      } else if (keepEmptyLines) {
+        result.push('');
       }
       continue;
     }
@@ -107,6 +120,8 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
       const codeBeforeComment = line.substring(0, commentIndex).trimEnd();
       if (codeBeforeComment.length > 0) {
         result.push(codeBeforeComment);
+      } else if (keepEmptyLines) {
+        result.push('');
       }
       continue;
     }

@@ -83,9 +83,14 @@ export function removeJsonComments(code: string, preserveLicense: boolean = fals
  * Removes comments from YAML code
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removeYamlComments(code: string, preserveLicense: boolean = false): string {
+export function removeYamlComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
   if (!code) return code;
   
   const lines = code.split('\n');
@@ -98,19 +103,22 @@ export function removeYamlComments(code: string, preserveLicense: boolean = fals
     if (trimmed.startsWith('#')) {
       if (preserveLicense && isLicenseComment(trimmed)) {
         result.push(line);
+      } else if (keepEmptyLines) {
+        result.push('');
       }
       continue;
     }
     
-    // Ред с код и коментар
+    // Line with code and comment
     const commentIndex = findCommentIndex(line);
     if (commentIndex !== -1) {
       const codeBeforeComment = line.substring(0, commentIndex).trimEnd();
       if (codeBeforeComment.length > 0) {
         result.push(codeBeforeComment);
+      } else if (keepEmptyLines) {
+        result.push('');
       }
     } else {
-      // Regular line without a comment
       result.push(line);
     }
   }
@@ -122,9 +130,14 @@ export function removeYamlComments(code: string, preserveLicense: boolean = fals
  * Removes comments from Ruby code
  * @param code - Input code
  * @param preserveLicense - Whether to preserve license comments
+ * @param keepEmptyLines - Whether to keep empty lines
  * @returns Processed code
  */
-export function removeRubyComments(code: string, preserveLicense: boolean = false): string {
+export function removeRubyComments(
+  code: string, 
+  preserveLicense: boolean = false,
+  keepEmptyLines: boolean = false
+): string {
   if (!code) return code;
   
   const lines = code.split('\n');
@@ -140,8 +153,10 @@ export function removeRubyComments(code: string, preserveLicense: boolean = fals
     if (trimmed.startsWith('=begin')) {
       inMultilineComment = true;
       multilineBuffer = [line];
-      // Check if it's a license block
       isLicenseBlock = preserveLicense && isLicenseComment(line);
+      if (!isLicenseBlock && keepEmptyLines) {
+        result.push('');
+      }
       continue;
     }
     
@@ -151,12 +166,18 @@ export function removeRubyComments(code: string, preserveLicense: boolean = fals
       if (trimmed.startsWith('=end')) {
         inMultilineComment = false;
         
-        // If it's a license block, check the entire buffer for license keywords
         if (preserveLicense) {
           const blockContent = multilineBuffer.join('\n');
           if (isLicenseBlock || isLicenseComment(blockContent)) {
-            // Keep the entire block
             result.push(...multilineBuffer);
+          } else if (keepEmptyLines) {
+            for (let i = 0; i < multilineBuffer.length; i++) {
+              result.push('');
+            }
+          }
+        } else if (keepEmptyLines) {
+          for (let i = 0; i < multilineBuffer.length; i++) {
+            result.push('');
           }
         }
         
@@ -170,29 +191,33 @@ export function removeRubyComments(code: string, preserveLicense: boolean = fals
     if (trimmed.startsWith('#')) {
       if (preserveLicense && isLicenseComment(trimmed)) {
         result.push(line);
+      } else if (keepEmptyLines) {
+        result.push('');
       }
       continue;
     }
     
-    // Ред с код и коментар
-    const commentIndex = findCommentIndex(line);
-    if (commentIndex !== -1) {
-      const codeBeforeComment = line.substring(0, commentIndex).trimEnd();
-      const comment = line.substring(commentIndex);
-      
-      if (codeBeforeComment.length > 0) {
-        // If there's code before the comment and the comment is a license, keep both
-        if (preserveLicense && isLicenseComment(comment)) {
-          result.push(line);
-        } else {
-          result.push(codeBeforeComment);
-        }
-      } else if (preserveLicense && isLicenseComment(comment)) {
-        // Just a comment on the line and it's a license
-        result.push(line);
+  // Line with code and comment
+  const commentIndex = findCommentIndex(line);
+  if (commentIndex !== -1) {
+    const codeBeforeComment = line.substring(0, commentIndex).trimEnd();
+    const comment = line.substring(commentIndex);
+    
+    if (codeBeforeComment.length > 0) {
+      // There is code before the comment
+      if (preserveLicense && isLicenseComment(comment)) {
+        result.push(line); // Keep both the code and the license comment
+      } else {
+        result.push(codeBeforeComment); // Keep only the code
       }
       continue;
+    } else if (preserveLicense && isLicenseComment(comment)) {
+      result.push(line);
+    } else if (keepEmptyLines) {
+      result.push('');
     }
+    continue;
+  }
     
     // Regular line of code
     result.push(line);
