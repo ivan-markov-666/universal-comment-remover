@@ -2873,941 +2873,1052 @@ FROM users;`;
   });
 });
 
-describe('SQL Remover - Advanced Edge Cases', () => {
+describe('CSS/HTML/XML Remover - Advanced Edge Cases', () => {
   
   // ============================================================================
-  // 1. Single-line Comments (--)
+  // CSS TESTS
   // ============================================================================
-  describe('Single-line Comments (--)', () => {
-    test('basic single-line comment', () => {
-      const code = `-- This is a comment
-SELECT * FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
+  
+  describe('CSS - Basic Comment Removal', () => {
+    test('removes single-line CSS comment', () => {
+      const code = `/* This is a comment */
+.container {
+  color: red;
+}`;
+      const result = removeComments(code, { language: 'css' });
       
-      expect(result.code).toContain('SELECT * FROM users');
-      expect(result.code).not.toContain('-- This is a comment');
+      expect(result.code).toContain('.container');
+      expect(result.code).toContain('color: red;');
+      expect(result.code).not.toContain('/* This is a comment */');
     });
 
-    test('inline comment after statement', () => {
-      const code = `SELECT * FROM users; -- Get all users`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT * FROM users;');
-      expect(result.code).not.toContain('-- Get all users');
-    });
-
-    test('multiple single-line comments', () => {
-      const code = `-- Comment 1
--- Comment 2
--- Comment 3
-SELECT id, name FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT id, name FROM users');
-      expect(result.code).not.toContain('-- Comment');
-    });
-
-    test('comment in the middle of query', () => {
-      const code = `SELECT id, name
--- Filter by age
-FROM users
-WHERE age > 18;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT id, name');
-      expect(result.code).toContain('FROM users');
-      expect(result.code).toContain('WHERE age > 18');
-      expect(result.code).not.toContain('-- Filter by age');
-    });
-
-    test('comment after each column', () => {
-      const code = `SELECT 
-    id,      -- User ID
-    name,    -- User name
-    email    -- User email
-FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('id,');
-      expect(result.code).toContain('name,');
-      expect(result.code).toContain('email');
-      expect(result.code).not.toContain('-- User ID');
-      expect(result.code).not.toContain('-- User name');
-    });
-  });
-
-  // ============================================================================
-  // 2. Multi-line Comments (/* */)
-  // ============================================================================
-  describe('Multi-line Comments (/* */)', () => {
-    test('basic multi-line comment', () => {
+    test('removes multi-line CSS comment', () => {
       const code = `/* This is a
-   multi-line comment */
-SELECT * FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
+   multi-line
+   comment */
+.button {
+  background: blue;
+}`;
+      const result = removeComments(code, { language: 'css' });
       
-      expect(result.code).toContain('SELECT * FROM users');
-      expect(result.code).not.toContain('multi-line comment');
+      expect(result.code).toContain('.button');
+      expect(result.code).not.toContain('multi-line');
     });
 
-    test('single-line block comment', () => {
-      const code = `/* Comment on one line */
-SELECT * FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
+    test('removes inline comment', () => {
+      const code = `.container { /* comment */ color: red; }`;
+      const result = removeComments(code, { language: 'css' });
       
-      expect(result.code).toContain('SELECT * FROM users');
+      expect(result.code).toContain('.container');
+      expect(result.code).toContain('color: red;');
+      expect(result.code).not.toContain('/* comment */');
+    });
+
+    test('removes multiple comments', () => {
+      const code = `/* Comment 1 */
+.class1 { color: red; }
+/* Comment 2 */
+.class2 { color: blue; }
+/* Comment 3 */`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('.class1');
+      expect(result.code).toContain('.class2');
       expect(result.code).not.toContain('/* Comment');
     });
 
-    test('inline block comment', () => {
-      const code = `SELECT /* columns */ * FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
+    test('removes comment between properties', () => {
+      const code = `.button {
+  color: red;
+  /* Border style */
+  border: 1px solid black;
+}`;
+      const result = removeComments(code, { language: 'css' });
       
-      expect(result.code).toContain('SELECT');
-      expect(result.code).toContain('* FROM users');
-      expect(result.code).not.toContain('columns');
-    });
-
-    test('multiple block comments', () => {
-      const code = `/* Comment 1 */
-SELECT id,
-/* Comment 2 */
-name
-/* Comment 3 */
-FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT id,');
-      expect(result.code).toContain('name');
-      expect(result.code).toContain('FROM users');
-      expect(result.code).not.toContain('Comment 1');
-      expect(result.code).not.toContain('Comment 2');
-      expect(result.code).not.toContain('Comment 3');
-    });
-
-    test('nested-looking comment (not actually nested)', () => {
-      const code = `/* Outer comment
-   /* This looks nested but isn't valid SQL */
-   Still part of outer comment
-*/
-SELECT * FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT * FROM users');
-      expect(result.code).not.toContain('Outer comment');
-      expect(result.code).not.toContain('This looks nested');
+      expect(result.code).toContain('color: red;');
+      expect(result.code).toContain('border: 1px solid black;');
+      expect(result.code).not.toContain('/* Border style */');
     });
   });
 
-  // ============================================================================
-  // 3. Comments Inside Strings
-  // ============================================================================
-  describe('Comments Inside String Literals', () => {
-    test('-- inside single-quoted string', () => {
-      const code = `SELECT 'John -- Doe' AS name;
--- Real comment`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain("'John -- Doe'");
-      expect(result.code).not.toContain('-- Real comment');
-    });
-
-    test('-- inside double-quoted string', () => {
-      const code = `SELECT "Column -- Name" FROM users;
--- Comment`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('"Column -- Name"');
-      expect(result.code).not.toContain('-- Comment');
-    });
-
-    test('/* */ inside single-quoted string', () => {
-      const code = `SELECT 'Text /* with comment style */' AS text;
-/* Real comment */`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain("'Text /* with comment style */'");
-      expect(result.code).not.toContain('Real comment');
-    });
-
-    test('/* */ inside double-quoted string', () => {
-      const code = `SELECT "Column /* Name */" FROM users;
-/* Comment */`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('"Column /* Name */"');
-      expect(result.code).not.toContain('Comment');
-    });
-
-    test('mixed quotes with comment patterns', () => {
-      const code = `SELECT 'It''s a -- test', "Another /* one */" FROM dual;
--- Real comment`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain("'It''s a -- test'");
-      expect(result.code).toContain('"Another /* one */"');
-      expect(result.code).not.toContain('-- Real comment');
-    });
-
-    test('URL in string with --', () => {
-      const code = `UPDATE users SET url = 'https://example.com/path--name';
--- Comment`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('https://example.com/path--name');
-      expect(result.code).not.toContain('-- Comment');
-    });
-
-    test('email in string with --', () => {
-      const code = `INSERT INTO users (email) VALUES ('user--name@example.com');
--- Comment`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('user--name@example.com');
-      expect(result.code).not.toContain('-- Comment');
-    });
-  });
-
-  // ============================================================================
-  // 4. MySQL Specific - # Comments
-  // ============================================================================
-  describe('MySQL Hash Comments (#)', () => {
-    test('MySQL # comment should remain (not standard SQL)', () => {
-      const code = `SELECT * FROM users; # MySQL comment
--- Standard comment`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      // # comments are MySQL-specific and not removed by standard SQL remover
-      expect(result.code).toContain('# MySQL comment');
-      expect(result.code).not.toContain('-- Standard comment');
-    });
-
-    test('# in string should be preserved', () => {
-      const code = `SELECT 'Price: $#100' AS price;
--- Comment`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain("'Price: $#100'");
-      expect(result.code).not.toContain('-- Comment');
-    });
-  });
-
-  // ============================================================================
-  // 5. SELECT Statements with Comments
-  // ============================================================================
-  describe('SELECT Statements', () => {
-    test('SELECT with WHERE clause and comments', () => {
-      const code = `-- Get active users
-SELECT id, name, email
-FROM users
-WHERE status = 'active'  -- Only active
-AND age >= 18;           -- Adults only`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT id, name, email');
-      expect(result.code).toContain('FROM users');
-      expect(result.code).toContain("WHERE status = 'active'");
-      expect(result.code).toContain('AND age >= 18;');
-      expect(result.code).not.toContain('Get active users');
-      expect(result.code).not.toContain('Only active');
-      expect(result.code).not.toContain('Adults only');
-    });
-
-    test('SELECT with JOINs and comments', () => {
-      const code = `-- Join users with orders
-SELECT u.name, o.total
-FROM users u
-/* Inner join on user_id */
-INNER JOIN orders o ON u.id = o.user_id
-WHERE o.status = 'completed'; -- Completed orders only`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT u.name, o.total');
-      expect(result.code).toContain('INNER JOIN orders o');
-      expect(result.code).not.toContain('Join users with orders');
-      expect(result.code).not.toContain('Inner join on user_id');
-      expect(result.code).not.toContain('Completed orders only');
-    });
-
-    test('SELECT with GROUP BY and HAVING', () => {
-      const code = `SELECT department, COUNT(*) as count
-FROM employees
--- Group by department
-GROUP BY department
--- Filter groups
-HAVING COUNT(*) > 5;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('GROUP BY department');
-      expect(result.code).toContain('HAVING COUNT(*) > 5');
-      expect(result.code).not.toContain('-- Group by department');
-      expect(result.code).not.toContain('-- Filter groups');
-    });
-
-    test('SELECT with ORDER BY and LIMIT', () => {
-      const code = `SELECT * FROM users
--- Sort by creation date
-ORDER BY created_at DESC
--- Limit results
-LIMIT 10;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('ORDER BY created_at DESC');
-      expect(result.code).toContain('LIMIT 10');
-      expect(result.code).not.toContain('-- Sort by');
-      expect(result.code).not.toContain('-- Limit results');
-    });
-  });
-
-  // ============================================================================
-  // 6. INSERT/UPDATE/DELETE Statements
-  // ============================================================================
-  describe('INSERT/UPDATE/DELETE Statements', () => {
-    test('INSERT with comments', () => {
-      const code = `-- Insert new user
-INSERT INTO users (name, email, age)
-/* Specify values */
-VALUES ('John Doe', 'john@example.com', 30);`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('INSERT INTO users');
-      expect(result.code).toContain("VALUES ('John Doe'");
-      expect(result.code).not.toContain('Insert new user');
-      expect(result.code).not.toContain('Specify values');
-    });
-
-    test('UPDATE with comments', () => {
-      const code = `-- Update user status
-UPDATE users
-SET status = 'inactive', -- Set status
-    updated_at = NOW()   -- Update timestamp
-WHERE id = 123;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('UPDATE users');
-      expect(result.code).toContain("SET status = 'inactive',");
-      expect(result.code).toContain('updated_at = NOW()');
-      expect(result.code).not.toContain('Update user status');
-      expect(result.code).not.toContain('Set status');
-    });
-
-    test('DELETE with comments', () => {
-      const code = `-- Delete old records
-DELETE FROM logs
-WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY); -- Older than 30 days`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('DELETE FROM logs');
-      expect(result.code).toContain('WHERE created_at <');
-      expect(result.code).not.toContain('Delete old records');
-      expect(result.code).not.toContain('Older than 30 days');
-    });
-  });
-
-  // ============================================================================
-  // 7. CREATE Statements
-  // ============================================================================
-  describe('CREATE Statements', () => {
-    test('CREATE TABLE with column comments', () => {
-      const code = `-- Create users table
-CREATE TABLE users (
-    id INT PRIMARY KEY,        -- User ID
-    name VARCHAR(100) NOT NULL, -- User name
-    email VARCHAR(255),         -- Email address
-    created_at TIMESTAMP        -- Creation time
-);`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('CREATE TABLE users');
-      expect(result.code).toContain('id INT PRIMARY KEY,');
-      expect(result.code).toContain('name VARCHAR(100) NOT NULL,');
-      expect(result.code).not.toContain('Create users table');
-      expect(result.code).not.toContain('User ID');
-      expect(result.code).not.toContain('User name');
-    });
-
-    test('CREATE INDEX with comments', () => {
-      const code = `-- Create index for faster lookups
-CREATE INDEX idx_email ON users(email);
--- End of index creation`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('CREATE INDEX idx_email');
-      expect(result.code).not.toContain('faster lookups');
-      expect(result.code).not.toContain('End of index');
-    });
-
-    test('CREATE VIEW with comments', () => {
-      const code = `-- Active users view
-CREATE VIEW active_users AS
-SELECT id, name, email
-FROM users
-WHERE status = 'active'; -- Only active`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('CREATE VIEW active_users');
-      expect(result.code).toContain('SELECT id, name, email');
-      expect(result.code).not.toContain('Active users view');
-      expect(result.code).not.toContain('Only active');
-    });
-  });
-
-  // ============================================================================
-  // 8. Subqueries with Comments
-  // ============================================================================
-  describe('Subqueries', () => {
-    test('subquery in WHERE clause', () => {
-      const code = `SELECT name FROM users
-WHERE id IN (
-    -- Subquery to get active user IDs
-    SELECT user_id FROM orders
-    WHERE status = 'completed' -- Completed orders
-);`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT name FROM users');
-      expect(result.code).toContain('SELECT user_id FROM orders');
-      expect(result.code).not.toContain('Subquery to get');
-      expect(result.code).not.toContain('Completed orders');
-    });
-
-    test('subquery in FROM clause', () => {
-      const code = `SELECT * FROM (
-    -- Inner query
-    SELECT id, name
-    FROM users
-    WHERE age > 18 -- Adults
-) AS adults;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT * FROM');
-      expect(result.code).toContain('SELECT id, name');
-      expect(result.code).toContain(') AS adults');
-      expect(result.code).not.toContain('Inner query');
-      expect(result.code).not.toContain('Adults');
-    });
-
-    test('correlated subquery', () => {
-      const code = `SELECT name,
-    (-- Get order count
-     SELECT COUNT(*)
-     FROM orders o
-     WHERE o.user_id = u.id -- Match user
-    ) AS order_count
-FROM users u;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT name,');
-      expect(result.code).toContain('SELECT COUNT(*)');
-      expect(result.code).toContain('WHERE o.user_id = u.id');
-      expect(result.code).not.toContain('Get order count');
-      expect(result.code).not.toContain('Match user');
-    });
-  });
-
-  // ============================================================================
-  // 9. UNION Queries
-  // ============================================================================
-  describe('UNION Queries', () => {
-    test('UNION with comments between queries', () => {
-      const code = `-- First query
-SELECT id, name FROM customers
--- Union with suppliers
-UNION
--- Second query
-SELECT id, name FROM suppliers;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT id, name FROM customers');
-      expect(result.code).toContain('UNION');
-      expect(result.code).toContain('SELECT id, name FROM suppliers');
-      expect(result.code).not.toContain('First query');
-      expect(result.code).not.toContain('Union with suppliers');
-      expect(result.code).not.toContain('Second query');
-    });
-
-    test('UNION ALL with ORDER BY', () => {
-      const code = `SELECT * FROM table1 -- First table
-UNION ALL /* Include duplicates */
-SELECT * FROM table2 -- Second table
-ORDER BY id; -- Sort results`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('SELECT * FROM table1');
-      expect(result.code).toContain('UNION ALL');
-      expect(result.code).toContain('SELECT * FROM table2');
-      expect(result.code).toContain('ORDER BY id;');
-      expect(result.code).not.toContain('First table');
-      expect(result.code).not.toContain('Include duplicates');
-    });
-  });
-
-  // ============================================================================
-  // 10. CTE (Common Table Expressions) with Comments
-  // ============================================================================
-  describe('CTEs (WITH Clauses)', () => {
-    test('single CTE with comments', () => {
-      const code = `-- Define CTE
-WITH active_users AS (
-    -- Get active users
-    SELECT id, name
-    FROM users
-    WHERE status = 'active' -- Filter active
-)
--- Main query
-SELECT * FROM active_users;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('WITH active_users AS');
-      expect(result.code).toContain('SELECT id, name');
-      expect(result.code).toContain('SELECT * FROM active_users');
-      expect(result.code).not.toContain('Define CTE');
-      expect(result.code).not.toContain('Get active users');
-      expect(result.code).not.toContain('Main query');
-    });
-
-    test('multiple CTEs with comments', () => {
-      const code = `-- First CTE
-WITH users_cte AS (
-    SELECT id, name FROM users -- Get users
-),
--- Second CTE
-orders_cte AS (
-    SELECT user_id, COUNT(*) as count
-    FROM orders -- Count orders
-    GROUP BY user_id
-)
--- Join CTEs
-SELECT u.name, o.count
-FROM users_cte u
-JOIN orders_cte o ON u.id = o.user_id;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('WITH users_cte AS');
-      expect(result.code).toContain('orders_cte AS');
-      expect(result.code).toContain('FROM users_cte u');
-      expect(result.code).not.toContain('First CTE');
-      expect(result.code).not.toContain('Second CTE');
-      expect(result.code).not.toContain('Join CTEs');
-    });
-
-    test('recursive CTE with comments', () => {
-      const code = `-- Recursive CTE for hierarchy
-WITH RECURSIVE hierarchy AS (
-    -- Anchor member
-    SELECT id, parent_id, name, 0 AS level
-    FROM categories
-    WHERE parent_id IS NULL
-    
-    UNION ALL
-    
-    -- Recursive member
-    SELECT c.id, c.parent_id, c.name, h.level + 1
-    FROM categories c
-    JOIN hierarchy h ON c.parent_id = h.id
-)
-SELECT * FROM hierarchy; -- Final result`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('WITH RECURSIVE hierarchy AS');
-      expect(result.code).toContain('UNION ALL');
-      expect(result.code).not.toContain('Recursive CTE');
-      expect(result.code).not.toContain('Anchor member');
-      expect(result.code).not.toContain('Recursive member');
-    });
-  });
-
-  // ============================================================================
-  // 11. CASE Statements with Comments
-  // ============================================================================
-  describe('CASE Statements', () => {
-    test('CASE with comments on each WHEN', () => {
-      const code = `SELECT name,
-    CASE
-        WHEN age < 18 THEN 'Minor'    -- Under 18
-        WHEN age < 65 THEN 'Adult'    -- Working age
-        ELSE 'Senior'                  -- Retirement age
-    END AS age_group
-FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('CASE');
-      expect(result.code).toContain("WHEN age < 18 THEN 'Minor'");
-      expect(result.code).toContain("WHEN age < 65 THEN 'Adult'");
-      expect(result.code).toContain("ELSE 'Senior'");
-      expect(result.code).not.toContain('Under 18');
-      expect(result.code).not.toContain('Working age');
-      expect(result.code).not.toContain('Retirement age');
-    });
-
-    test('nested CASE statements', () => {
-      const code = `SELECT
-    CASE
-        WHEN status = 'active' THEN
-            CASE
-                WHEN premium = 1 THEN 'Premium' -- Premium user
-                ELSE 'Standard' -- Standard user
-            END
-        ELSE 'Inactive' -- Not active
-    END AS user_type
-FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('CASE');
-      expect(result.code).toContain("WHEN status = 'active'");
-      expect(result.code).not.toContain('Premium user');
-      expect(result.code).not.toContain('Standard user');
-      expect(result.code).not.toContain('Not active');
-    });
-  });
-
-  // ============================================================================
-  // 12. Stored Procedures and Functions
-  // ============================================================================
-  describe('Stored Procedures and Functions', () => {
-    test('stored procedure with comments', () => {
-      const code = `-- Create procedure
-CREATE PROCEDURE GetUserOrders(IN userId INT)
-BEGIN
-    -- Declare variables
-    DECLARE orderCount INT;
-    
-    -- Get order count
-    SELECT COUNT(*) INTO orderCount
-    FROM orders
-    WHERE user_id = userId; -- Filter by user
-    
-    -- Return results
-    SELECT orderCount AS total_orders;
-END;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('CREATE PROCEDURE GetUserOrders');
-      expect(result.code).toContain('BEGIN');
-      expect(result.code).toContain('DECLARE orderCount INT;');
-      expect(result.code).toContain('END;');
-      expect(result.code).not.toContain('Create procedure');
-      expect(result.code).not.toContain('Declare variables');
-      expect(result.code).not.toContain('Filter by user');
-    });
-
-    test('function with comments', () => {
-      const code = `-- Calculate discount
-CREATE FUNCTION CalculateDiscount(price DECIMAL)
-RETURNS DECIMAL
-BEGIN
-    -- Apply 10% discount
-    RETURN price * 0.9; -- Return discounted price
-END;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('CREATE FUNCTION CalculateDiscount');
-      expect(result.code).toContain('RETURNS DECIMAL');
-      expect(result.code).toContain('RETURN price * 0.9;');
-      expect(result.code).not.toContain('Calculate discount');
-      expect(result.code).not.toContain('Apply 10% discount');
-    });
-  });
-
-  // ============================================================================
-  // 13. Triggers with Comments
-  // ============================================================================
-  describe('Triggers', () => {
-    test('trigger with comments', () => {
-      const code = `-- Create audit trigger
-CREATE TRIGGER user_audit_trigger
-AFTER UPDATE ON users
-FOR EACH ROW
-BEGIN
-    -- Insert audit record
-    INSERT INTO user_audit (user_id, action, timestamp)
-    VALUES (NEW.id, 'UPDATE', NOW()); -- Record update
-END;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('CREATE TRIGGER user_audit_trigger');
-      expect(result.code).toContain('AFTER UPDATE ON users');
-      expect(result.code).toContain('INSERT INTO user_audit');
-      expect(result.code).not.toContain('Create audit trigger');
-      expect(result.code).not.toContain('Insert audit record');
-    });
-  });
-
-  // ============================================================================
-  // 14. Transaction Blocks
-  // ============================================================================
-  describe('Transaction Blocks', () => {
-    test('transaction with comments', () => {
-      const code = `-- Start transaction
-BEGIN TRANSACTION;
-
--- Update account balance
-UPDATE accounts
-SET balance = balance - 100
-WHERE id = 1; -- Debit account
-
--- Credit another account
-UPDATE accounts
-SET balance = balance + 100
-WHERE id = 2; -- Credit account
-
--- Commit transaction
-COMMIT;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('BEGIN TRANSACTION;');
-      expect(result.code).toContain('UPDATE accounts');
-      expect(result.code).toContain('COMMIT;');
-      expect(result.code).not.toContain('Start transaction');
-      expect(result.code).not.toContain('Debit account');
-      expect(result.code).not.toContain('Credit account');
-    });
-
-    test('transaction with ROLLBACK', () => {
-      const code = `BEGIN; -- Start
--- Try operation
-UPDATE users SET status = 'active';
--- Rollback on error
-ROLLBACK; -- Undo changes`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain('BEGIN;');
-      expect(result.code).toContain('UPDATE users');
-      expect(result.code).toContain('ROLLBACK;');
-      expect(result.code).not.toContain('Start');
-      expect(result.code).not.toContain('Try operation');
-      expect(result.code).not.toContain('Undo changes');
-    });
-  });
-
-  // ============================================================================
-  // 15. License Comments (preserveLicense option)
-  // ============================================================================
-  describe('License Comments Preservation', () => {
-    test('preserves copyright comment', () => {
-      const code = `-- Copyright (c) 2024 Company Name
--- All rights reserved
--- Regular comment
-SELECT * FROM users;`;
+  describe('CSS - License Comments', () => {
+    test('preserves /*! style license comment', () => {
+      const code = `/*! Copyright 2024 MIT License */
+/* Regular comment */
+.container { color: red; }`;
       const result = removeComments(code, {
-        language: 'sql',
+        language: 'css',
         preserveLicense: true
       });
       
-      expect(result.code).toContain('Copyright');
+      expect(result.code).toContain('Copyright 2024 MIT License');
       expect(result.code).not.toContain('Regular comment');
     });
 
-    test('preserves license in block comment', () => {
-      const code = `/* This database schema is licensed under MIT License
-   Copyright (c) 2024 */
--- Regular comment
-CREATE TABLE users (id INT);`;
+    test('preserves license keyword in comment', () => {
+      const code = `/* This file is licensed under MIT License */
+/* Regular comment */
+body { margin: 0; }`;
       const result = removeComments(code, {
-        language: 'sql',
+        language: 'css',
         preserveLicense: true
       });
       
-      expect(result.code).toContain('MIT License');
-      expect(result.code).toContain('Copyright');
+      expect(result.code).toContain('licensed under MIT License');
+      expect(result.code).not.toContain('Regular comment');
+    });
+
+    test('preserves copyright comment', () => {
+      const code = `/* Copyright (c) 2024 Company Name */
+/* Regular comment */
+.button { padding: 10px; }`;
+      const result = removeComments(code, {
+        language: 'css',
+        preserveLicense: true
+      });
+      
+      expect(result.code).toContain('Copyright (c) 2024');
       expect(result.code).not.toContain('Regular comment');
     });
 
     test('preserves author comment', () => {
-      const code = `-- Author: John Doe
--- Date: 2024-01-01
--- Regular comment
-SELECT * FROM users;`;
+      const code = `/* Author: John Doe */
+/* Regular comment */
+div { display: block; }`;
       const result = removeComments(code, {
-        language: 'sql',
+        language: 'css',
         preserveLicense: true
       });
       
-      expect(result.code).toContain('Author:');
+      expect(result.code).toContain('Author: John Doe');
       expect(result.code).not.toContain('Regular comment');
     });
   });
 
-  // ============================================================================
-  // 16. Complex Real-World Queries
-  // ============================================================================
-  describe('Complex Real-World SQL Queries', () => {
-    test('complex analytics query', () => {
-      const code = `-- Monthly revenue report
-WITH monthly_sales AS (
-    -- Calculate monthly totals
-    SELECT 
-        DATE_TRUNC('month', order_date) AS month,
-        SUM(total) AS revenue, -- Total revenue
-        COUNT(*) AS order_count -- Number of orders
-    FROM orders
-    WHERE status = 'completed' -- Only completed
-    GROUP BY DATE_TRUNC('month', order_date)
-),
--- Calculate growth rates
-growth AS (
-    SELECT
-        month,
-        revenue,
-        LAG(revenue) OVER (ORDER BY month) AS prev_revenue, -- Previous month
-        -- Calculate percentage growth
-        ROUND(((revenue - LAG(revenue) OVER (ORDER BY month)) / 
-               LAG(revenue) OVER (ORDER BY month)) * 100, 2) AS growth_rate
-    FROM monthly_sales
-)
--- Final output
-SELECT * FROM growth
-ORDER BY month DESC; -- Most recent first`;
-      const result = removeComments(code, { language: 'sql' });
+  describe('CSS - Selectors with Comments', () => {
+    test('comment before selector', () => {
+      const code = `/* Button styles */
+.button {
+  color: white;
+}`;
+      const result = removeComments(code, { language: 'css' });
       
-      expect(result.code).toContain('WITH monthly_sales AS');
-      expect(result.code).toContain('SUM(total) AS revenue,');
-      expect(result.code).toContain('LAG(revenue)');
-      expect(result.code).toContain('ORDER BY month DESC;');
-      expect(result.code).not.toContain('Monthly revenue report');
-      expect(result.code).not.toContain('Calculate monthly totals');
-      expect(result.code).not.toContain('Total revenue');
-      expect(result.code).not.toContain('Most recent first');
+      expect(result.code).toContain('.button');
+      expect(result.code).not.toContain('Button styles');
     });
 
-    test('data migration script', () => {
-      const code = `-- Data migration script
--- Backup old data
-CREATE TABLE users_backup AS SELECT * FROM users;
-
--- Add new column
-ALTER TABLE users ADD COLUMN status VARCHAR(20);
-
--- Migrate data
-UPDATE users
-SET status = CASE
-    WHEN last_login > NOW() - INTERVAL '30 days' THEN 'active'  -- Active users
-    WHEN last_login > NOW() - INTERVAL '90 days' THEN 'inactive' -- Inactive users
-    ELSE 'dormant' -- Dormant users
-END;
-
--- Create index for performance
-CREATE INDEX idx_users_status ON users(status);
-
--- Verify migration
-SELECT status, COUNT(*) FROM users GROUP BY status;`;
-      const result = removeComments(code, { language: 'sql' });
+    test('comment between selectors in group', () => {
+      const code = `.button,
+/* Anchor styles */
+a {
+  text-decoration: none;
+}`;
+      const result = removeComments(code, { language: 'css' });
       
-      expect(result.code).toContain('CREATE TABLE users_backup');
-      expect(result.code).toContain('ALTER TABLE users');
-      expect(result.code).toContain('UPDATE users');
-      expect(result.code).toContain('CREATE INDEX');
-      expect(result.code).not.toContain('Data migration script');
-      expect(result.code).not.toContain('Backup old data');
-      expect(result.code).not.toContain('Active users');
+      expect(result.code).toContain('.button,');
+      expect(result.code).toContain('a {');
+      expect(result.code).not.toContain('Anchor styles');
+    });
+
+    test('complex selector with comment', () => {
+      const code = `/* Navigation styles */
+nav > ul > li:first-child {
+  font-weight: bold;
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('nav > ul > li:first-child');
+      expect(result.code).not.toContain('Navigation styles');
+    });
+
+    test('pseudo-class selector with comment', () => {
+      const code = `/* Hover effect */
+.button:hover {
+  background: darkblue;
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('.button:hover');
+      expect(result.code).not.toContain('Hover effect');
+    });
+
+    test('attribute selector with comment', () => {
+      const code = `/* Input styles */
+input[type="text"] {
+  border: 1px solid gray;
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('input[type="text"]');
+      expect(result.code).not.toContain('Input styles');
+    });
+  });
+
+  describe('CSS - Media Queries', () => {
+    test('comment in media query', () => {
+      const code = `/* Responsive styles */
+@media (max-width: 768px) {
+  /* Mobile styles */
+  .container {
+    width: 100%; /* Full width */
+  }
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('@media (max-width: 768px)');
+      expect(result.code).toContain('.container');
+      expect(result.code).toContain('width: 100%;');
+      expect(result.code).not.toContain('Responsive styles');
+      expect(result.code).not.toContain('Mobile styles');
+      expect(result.code).not.toContain('Full width');
+    });
+
+    test('multiple media queries with comments', () => {
+      const code = `/* Tablet */
+@media (max-width: 1024px) {
+  .container { width: 90%; }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .container { width: 100%; }
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('@media (max-width: 1024px)');
+      expect(result.code).toContain('@media (max-width: 768px)');
+      expect(result.code).not.toContain('/* Tablet */');
+      expect(result.code).not.toContain('/* Mobile */');
+    });
+
+    test('media query with multiple conditions', () => {
+      const code = `/* Print styles */
+@media print and (orientation: landscape) {
+  body { margin: 0; }
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('@media print and (orientation: landscape)');
+      expect(result.code).not.toContain('Print styles');
+    });
+  });
+
+  describe('CSS - Keyframes', () => {
+    test('keyframes with comments', () => {
+      const code = `/* Fade animation */
+@keyframes fadeIn {
+  /* Start state */
+  0% {
+    opacity: 0;
+  }
+  /* End state */
+  100% {
+    opacity: 1;
+  }
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('@keyframes fadeIn');
+      expect(result.code).toContain('0%');
+      expect(result.code).toContain('100%');
+      expect(result.code).not.toContain('Fade animation');
+      expect(result.code).not.toContain('Start state');
+      expect(result.code).not.toContain('End state');
+    });
+
+    test('keyframes with vendor prefixes', () => {
+      const code = `/* Webkit animation */
+@-webkit-keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('@-webkit-keyframes spin');
+      expect(result.code).not.toContain('Webkit animation');
+    });
+  });
+
+  describe('CSS - Custom Properties (CSS Variables)', () => {
+    test('CSS variables with comments', () => {
+      const code = `:root {
+  /* Primary color */
+  --primary-color: #007bff;
+  /* Secondary color */
+  --secondary-color: #6c757d;
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('--primary-color: #007bff;');
+      expect(result.code).toContain('--secondary-color: #6c757d;');
+      expect(result.code).not.toContain('Primary color');
+      expect(result.code).not.toContain('Secondary color');
+    });
+
+    test('using CSS variables with comments', () => {
+      const code = `.button {
+  /* Use theme color */
+  background: var(--primary-color);
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('background: var(--primary-color);');
+      expect(result.code).not.toContain('Use theme color');
+    });
+  });
+
+  describe('CSS - calc() and Other Functions', () => {
+    test('calc() with comment', () => {
+      const code = `.container {
+  /* Calculate width */
+  width: calc(100% - 20px);
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('width: calc(100% - 20px);');
+      expect(result.code).not.toContain('Calculate width');
+    });
+
+    test('multiple functions with comments', () => {
+      const code = `.element {
+  /* Transform */
+  transform: translateX(10px) rotate(45deg);
+  /* Filter */
+  filter: blur(5px) brightness(1.2);
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('transform: translateX(10px) rotate(45deg);');
+      expect(result.code).toContain('filter: blur(5px) brightness(1.2);');
+      expect(result.code).not.toContain('/* Transform */');
+      expect(result.code).not.toContain('/* Filter */');
+    });
+  });
+
+  describe('CSS - Grid and Flexbox', () => {
+    test('CSS Grid with comments', () => {
+      const code = `.grid {
+  /* Grid container */
+  display: grid;
+  /* Define columns */
+  grid-template-columns: repeat(3, 1fr);
+  /* Gap between items */
+  gap: 20px;
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('display: grid;');
+      expect(result.code).toContain('grid-template-columns: repeat(3, 1fr);');
+      expect(result.code).toContain('gap: 20px;');
+      expect(result.code).not.toContain('Grid container');
+      expect(result.code).not.toContain('Define columns');
+    });
+
+    test('Flexbox with comments', () => {
+      const code = `.flex {
+  /* Flex container */
+  display: flex;
+  /* Center items */
+  justify-content: center;
+  align-items: center;
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('display: flex;');
+      expect(result.code).toContain('justify-content: center;');
+      expect(result.code).not.toContain('Flex container');
+      expect(result.code).not.toContain('Center items');
+    });
+  });
+
+  describe('CSS - @import and @font-face', () => {
+    test('@import with comment', () => {
+      const code = `/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css?family=Roboto');
+/* Main styles */
+body { font-family: Roboto; }`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain("@import url('https://fonts.googleapis.com/css?family=Roboto');");
+      expect(result.code).not.toContain('Import Google Fonts');
+      expect(result.code).not.toContain('Main styles');
+    });
+
+    test('@font-face with comments', () => {
+      const code = `/* Custom font */
+@font-face {
+  /* Font family name */
+  font-family: 'MyFont';
+  /* Font source */
+  src: url('myfont.woff2') format('woff2');
+}`;
+      const result = removeComments(code, { language: 'css' });
+      
+      expect(result.code).toContain('@font-face');
+      expect(result.code).toContain("font-family: 'MyFont';");
+      expect(result.code).not.toContain('Custom font');
+      expect(result.code).not.toContain('Font family name');
     });
   });
 
   // ============================================================================
-  // 17. Edge Cases and Pathological Input
+  // HTML TESTS
   // ============================================================================
-  describe('Edge Cases and Pathological Input', () => {
-    test('only comments in file', () => {
-      const code = `-- Comment 1
--- Comment 2
-/* Comment 3 */`;
-      const result = removeComments(code, { language: 'sql' });
+
+  describe('HTML - Basic Comment Removal', () => {
+    test('removes simple HTML comment', () => {
+      const code = `<!-- This is a comment -->
+<div>Content</div>`;
+      const result = removeComments(code, { language: 'html' });
       
-      expect(result.code.trim().length).toBeLessThan(code.length);
+      expect(result.code).toContain('<div>Content</div>');
+      expect(result.code).not.toContain('<!-- This is a comment -->');
     });
 
-    test('empty SQL file', () => {
-      const code = '';
-      const result = removeComments(code, { language: 'sql' });
+    test('removes multi-line HTML comment', () => {
+      const code = `<!-- This is a
+     multi-line
+     comment -->
+<p>Paragraph</p>`;
+      const result = removeComments(code, { language: 'html' });
       
+      expect(result.code).toContain('<p>Paragraph</p>');
+      expect(result.code).not.toContain('multi-line');
+    });
+
+    test('removes multiple comments', () => {
+      const code = `<!-- Comment 1 -->
+<div>Content 1</div>
+<!-- Comment 2 -->
+<div>Content 2</div>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('Content 1');
+      expect(result.code).toContain('Content 2');
+      expect(result.code).not.toContain('<!-- Comment');
+    });
+
+    test('removes comment between tags', () => {
+      const code = `<div>
+  <!-- Inner comment -->
+  <p>Text</p>
+</div>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<p>Text</p>');
+      expect(result.code).not.toContain('Inner comment');
+    });
+  });
+
+  describe('HTML - License Comments', () => {
+    test('preserves license comment', () => {
+      const code = `<!-- Copyright 2024 MIT License -->
+<!-- Regular comment -->
+<div>Content</div>`;
+      const result = removeComments(code, {
+        language: 'html',
+        preserveLicense: true
+      });
+      
+      expect(result.code).toContain('Copyright 2024 MIT License');
+      expect(result.code).not.toContain('Regular comment');
+    });
+
+    test('preserves author comment', () => {
+      const code = `<!-- Author: John Doe -->
+<!-- Regular comment -->
+<body></body>`;
+      const result = removeComments(code, {
+        language: 'html',
+        preserveLicense: true
+      });
+      
+      expect(result.code).toContain('Author: John Doe');
+      expect(result.code).not.toContain('Regular comment');
+    });
+  });
+
+  describe('HTML - DOCTYPE and Structure', () => {
+    test('preserves DOCTYPE with comment after', () => {
+      const code = `<!DOCTYPE html>
+<!-- HTML5 document -->
+<html>
+<head>
+  <title>Test</title>
+</head>
+</html>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<!DOCTYPE html>');
+      expect(result.code).toContain('<html>');
+      expect(result.code).not.toContain('HTML5 document');
+    });
+
+    test('comments in head section', () => {
+      const code = `<head>
+  <!-- Meta tags -->
+  <meta charset="UTF-8">
+  <!-- CSS link -->
+  <link rel="stylesheet" href="style.css">
+</head>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<meta charset="UTF-8">');
+      expect(result.code).toContain('<link rel="stylesheet"');
+      expect(result.code).not.toContain('Meta tags');
+      expect(result.code).not.toContain('CSS link');
+    });
+
+    test('comments in body section', () => {
+      const code = `<body>
+  <!-- Header -->
+  <header>
+    <h1>Title</h1>
+  </header>
+  <!-- Main content -->
+  <main>
+    <p>Content</p>
+  </main>
+</body>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<header>');
+      expect(result.code).toContain('<main>');
+      expect(result.code).not.toContain('<!-- Header -->');
+      expect(result.code).not.toContain('<!-- Main content -->');
+    });
+  });
+
+  describe('HTML - Conditional Comments (IE)', () => {
+    test('removes IE conditional comment', () => {
+      const code = `<!--[if IE]>
+  <p>You are using Internet Explorer</p>
+<![endif]-->
+<p>Regular content</p>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<p>Regular content</p>');
+      expect(result.code).not.toContain('Internet Explorer');
+    });
+
+    test('removes IE version-specific conditional', () => {
+      const code = `<!--[if lt IE 9]>
+  <script src="html5shiv.js"></script>
+<![endif]-->
+<div>Content</div>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<div>Content</div>');
+      expect(result.code).not.toContain('html5shiv');
+    });
+  });
+
+  describe('HTML - Script and Style Tags', () => {
+    test('removes comment before script tag', () => {
+      const code = `<!-- JavaScript -->
+<script>
+  console.log("Hello");
+</script>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<script>');
+      expect(result.code).toContain('console.log');
+      expect(result.code).not.toContain('<!-- JavaScript -->');
+    });
+
+    test('removes comment before style tag', () => {
+      const code = `<!-- Styles -->
+<style>
+  .button { color: red; }
+</style>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<style>');
+      expect(result.code).toContain('.button');
+      expect(result.code).not.toContain('<!-- Styles -->');
+    });
+
+    test('HTML comments outside, CSS/JS comments inside', () => {
+      const code = `<!-- HTML comment -->
+<style>
+  /* CSS comment */
+  body { margin: 0; }
+</style>
+<script>
+  // JS comment
+  var x = 5;
+</script>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).not.toContain('<!-- HTML comment -->');
+      // Note: CSS and JS comments inside <style> and <script> are NOT removed
+      // because HTML remover only removes HTML comments
+      expect(result.code).toContain('/* CSS comment */');
+      expect(result.code).toContain('// JS comment');
+    });
+  });
+
+  describe('HTML - Complex Structures', () => {
+    test('comment in list', () => {
+      const code = `<ul>
+  <!-- Item 1 -->
+  <li>First</li>
+  <!-- Item 2 -->
+  <li>Second</li>
+</ul>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<li>First</li>');
+      expect(result.code).toContain('<li>Second</li>');
+      expect(result.code).not.toContain('<!-- Item');
+    });
+
+    test('comment in table', () => {
+      const code = `<table>
+  <!-- Header row -->
+  <tr>
+    <th>Name</th>
+  </tr>
+  <!-- Data row -->
+  <tr>
+    <td>John</td>
+  </tr>
+</table>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<th>Name</th>');
+      expect(result.code).toContain('<td>John</td>');
+      expect(result.code).not.toContain('Header row');
+      expect(result.code).not.toContain('Data row');
+    });
+
+    test('comment in form', () => {
+      const code = `<form>
+  <!-- Name input -->
+  <input type="text" name="name">
+  <!-- Email input -->
+  <input type="email" name="email">
+</form>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<input type="text"');
+      expect(result.code).toContain('<input type="email"');
+      expect(result.code).not.toContain('Name input');
+      expect(result.code).not.toContain('Email input');
+    });
+  });
+
+  describe('HTML - SVG with Comments', () => {
+    test('comments in SVG', () => {
+      const code = `<svg width="100" height="100">
+  <!-- Circle -->
+  <circle cx="50" cy="50" r="40" fill="red"/>
+  <!-- Rectangle -->
+  <rect x="10" y="10" width="30" height="30" fill="blue"/>
+</svg>`;
+      const result = removeComments(code, { language: 'html' });
+      
+      expect(result.code).toContain('<circle');
+      expect(result.code).toContain('<rect');
+      expect(result.code).not.toContain('<!-- Circle -->');
+      expect(result.code).not.toContain('<!-- Rectangle -->');
+    });
+  });
+
+  // ============================================================================
+  // XML TESTS
+  // ============================================================================
+
+  describe('XML - Basic Comment Removal', () => {
+    test('removes simple XML comment', () => {
+      const code = `<?xml version="1.0"?>
+<!-- This is a comment -->
+<root>
+  <element>Content</element>
+</root>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<root>');
+      expect(result.code).toContain('<element>Content</element>');
+      expect(result.code).not.toContain('<!-- This is a comment -->');
+    });
+
+    test('removes multi-line XML comment', () => {
+      const code = `<root>
+  <!-- This is a
+       multi-line
+       comment -->
+  <data>Value</data>
+</root>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<data>Value</data>');
+      expect(result.code).not.toContain('multi-line');
+    });
+
+    test('removes multiple comments', () => {
+      const code = `<!-- Comment 1 -->
+<root>
+  <!-- Comment 2 -->
+  <child1>Value1</child1>
+  <!-- Comment 3 -->
+  <child2>Value2</child2>
+</root>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<child1>Value1</child1>');
+      expect(result.code).toContain('<child2>Value2</child2>');
+      expect(result.code).not.toContain('<!-- Comment');
+    });
+  });
+
+  describe('XML - License Comments', () => {
+    test('preserves license comment', () => {
+      const code = `<!-- Copyright 2024 MIT License -->
+<!-- Regular comment -->
+<root></root>`;
+      const result = removeComments(code, {
+        language: 'xml',
+        preserveLicense: true
+      });
+      
+      expect(result.code).toContain('Copyright 2024 MIT License');
+      expect(result.code).not.toContain('Regular comment');
+    });
+
+    test('preserves author in XML', () => {
+      const code = `<!-- Author: John Doe -->
+<!-- Regular comment -->
+<document></document>`;
+      const result = removeComments(code, {
+        language: 'xml',
+        preserveLicense: true
+      });
+      
+      expect(result.code).toContain('Author: John Doe');
+      expect(result.code).not.toContain('Regular comment');
+    });
+  });
+
+  describe('XML - Declaration and Processing Instructions', () => {
+    test('preserves XML declaration', () => {
+      const code = `<?xml version="1.0" encoding="UTF-8"?>
+<!-- Comment -->
+<root></root>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<?xml version="1.0"');
+      expect(result.code).not.toContain('<!-- Comment -->');
+    });
+
+    test('preserves processing instructions', () => {
+      const code = `<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="style.xsl"?>
+<!-- Comment -->
+<root></root>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<?xml-stylesheet');
+      expect(result.code).not.toContain('<!-- Comment -->');
+    });
+  });
+
+  describe('XML - CDATA Sections', () => {
+    test('preserves CDATA with comment-like text', () => {
+      const code = `<script>
+  <![CDATA[
+    // This is NOT a comment, it's content
+    var x = 5; <!-- also not a comment -->
+  ]]>
+</script>
+<!-- Real comment -->`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<![CDATA[');
+      expect(result.code).toContain('// This is NOT a comment');
+      expect(result.code).toContain('<!-- also not a comment -->');
+      expect(result.code).not.toContain('<!-- Real comment -->');
+    });
+
+    test('comment before CDATA', () => {
+      const code = `<data>
+  <!-- CDATA section -->
+  <![CDATA[Some data]]>
+</data>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<![CDATA[Some data]]>');
+      expect(result.code).not.toContain('<!-- CDATA section -->');
+    });
+  });
+
+  describe('XML - Namespaces', () => {
+    test('comments with namespaces', () => {
+      const code = `<root xmlns:custom="http://example.com/custom">
+  <!-- Custom element -->
+  <custom:element>Value</custom:element>
+</root>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('xmlns:custom');
+      expect(result.code).toContain('<custom:element>');
+      expect(result.code).not.toContain('<!-- Custom element -->');
+    });
+
+    test('multiple namespaces with comments', () => {
+      const code = `<!-- Root element -->
+<root 
+  xmlns:ns1="http://example.com/ns1"
+  xmlns:ns2="http://example.com/ns2">
+  <!-- NS1 element -->
+  <ns1:item>Value1</ns1:item>
+  <!-- NS2 element -->
+  <ns2:item>Value2</ns2:item>
+</root>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('xmlns:ns1');
+      expect(result.code).toContain('xmlns:ns2');
+      expect(result.code).not.toContain('Root element');
+      expect(result.code).not.toContain('NS1 element');
+    });
+  });
+
+  describe('XML - Attributes with Comments', () => {
+    test('comment before attribute', () => {
+      const code = `<element
+  <!-- Attribute comment -->
+  attr="value">
+  Content
+</element>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('attr="value"');
+      expect(result.code).not.toContain('Attribute comment');
+    });
+
+    test('multiple attributes with comments', () => {
+      const code = `<element 
+  id="test"
+  <!-- Class attribute -->
+  class="container"
+  <!-- Data attribute -->
+  data-value="123">
+</element>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('id="test"');
+      expect(result.code).toContain('class="container"');
+      expect(result.code).not.toContain('Class attribute');
+      expect(result.code).not.toContain('Data attribute');
+    });
+  });
+
+  describe('XML - Complex Structures', () => {
+    test('nested elements with comments', () => {
+      const code = `<root>
+  <!-- Level 1 -->
+  <level1>
+    <!-- Level 2 -->
+    <level2>
+      <!-- Level 3 -->
+      <level3>Value</level3>
+    </level2>
+  </level1>
+</root>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<level1>');
+      expect(result.code).toContain('<level2>');
+      expect(result.code).toContain('<level3>Value</level3>');
+      expect(result.code).not.toContain('<!-- Level');
+    });
+
+    test('sibling elements with comments', () => {
+      const code = `<root>
+  <!-- First child -->
+  <child>Value1</child>
+  <!-- Second child -->
+  <child>Value2</child>
+  <!-- Third child -->
+  <child>Value3</child>
+</root>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('Value1');
+      expect(result.code).toContain('Value2');
+      expect(result.code).toContain('Value3');
+      expect(result.code).not.toContain('First child');
+      expect(result.code).not.toContain('Second child');
+    });
+  });
+
+  describe('XML - Real-World Examples', () => {
+    test('SVG as XML with comments', () => {
+      const code = `<?xml version="1.0"?>
+<!-- SVG Drawing -->
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <!-- Background -->
+  <rect width="100" height="100" fill="white"/>
+  <!-- Shape -->
+  <circle cx="50" cy="50" r="40" fill="red"/>
+</svg>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<svg xmlns');
+      expect(result.code).toContain('<rect');
+      expect(result.code).toContain('<circle');
+      expect(result.code).not.toContain('SVG Drawing');
+      expect(result.code).not.toContain('Background');
+    });
+
+    test('configuration XML with comments', () => {
+      const code = `<?xml version="1.0"?>
+<!-- Application Configuration -->
+<configuration>
+  <!-- Database settings -->
+  <database>
+    <host>localhost</host>
+    <port>3306</port>
+  </database>
+  <!-- API settings -->
+  <api>
+    <endpoint>https://api.example.com</endpoint>
+  </api>
+</configuration>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<configuration>');
+      expect(result.code).toContain('<database>');
+      expect(result.code).toContain('<host>localhost</host>');
+      expect(result.code).not.toContain('Application Configuration');
+      expect(result.code).not.toContain('Database settings');
+      expect(result.code).not.toContain('API settings');
+    });
+
+    test('RSS feed with comments', () => {
+      const code = `<?xml version="1.0"?>
+<!-- RSS Feed -->
+<rss version="2.0">
+  <channel>
+    <!-- Channel info -->
+    <title>My Blog</title>
+    <link>https://example.com</link>
+    <!-- Items -->
+    <item>
+      <title>Post Title</title>
+      <!-- Publication date -->
+      <pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>`;
+      const result = removeComments(code, { language: 'xml' });
+      
+      expect(result.code).toContain('<rss version="2.0">');
+      expect(result.code).toContain('<title>My Blog</title>');
+      expect(result.code).toContain('<pubDate>');
+      expect(result.code).not.toContain('RSS Feed');
+      expect(result.code).not.toContain('Channel info');
+      expect(result.code).not.toContain('Publication date');
+    });
+  });
+
+  // ============================================================================
+  // EDGE CASES
+  // ============================================================================
+
+  describe('Edge Cases - All Languages', () => {
+    test('empty CSS file', () => {
+      const result = removeComments('', { language: 'css' });
       expect(result.code).toBe('');
     });
 
-    test('extremely long comment', () => {
-      const longComment = '-- ' + 'x'.repeat(10000);
-      const code = `${longComment}\nSELECT * FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
+    test('empty HTML file', () => {
+      const result = removeComments('', { language: 'html' });
+      expect(result.code).toBe('');
+    });
+
+    test('empty XML file', () => {
+      const result = removeComments('', { language: 'xml' });
+      expect(result.code).toBe('');
+    });
+
+    test('CSS with only comments', () => {
+      const code = `/* Comment 1 */
+/* Comment 2 */
+/* Comment 3 */`;
+      const result = removeComments(code, { language: 'css' });
+      expect(result.code.trim().length).toBeLessThan(code.length);
+    });
+
+    test('HTML with only comments', () => {
+      const code = `<!-- Comment 1 -->
+<!-- Comment 2 -->`;
+      const result = removeComments(code, { language: 'html' });
+      expect(result.code.trim().length).toBeLessThan(code.length);
+    });
+
+    test('XML with only comments', () => {
+      const code = `<!-- Comment 1 -->
+<!-- Comment 2 -->`;
+      const result = removeComments(code, { language: 'xml' });
+      expect(result.code.trim().length).toBeLessThan(code.length);
+    });
+
+    test('extremely long CSS comment', () => {
+      const longComment = '/* ' + 'x'.repeat(10000) + ' */';
+      const code = `${longComment}\n.button { color: red; }`;
+      const result = removeComments(code, { language: 'css' });
       
-      expect(result.code).toContain('SELECT * FROM users');
+      expect(result.code).toContain('.button');
       expect(result.code.length).toBeLessThan(code.length);
     });
 
-    test('deeply nested subqueries', () => {
-      const code = `SELECT * FROM (
-    -- Level 1
-    SELECT * FROM (
-        -- Level 2
-        SELECT * FROM (
-            -- Level 3
-            SELECT * FROM users
-        ) l3
-    ) l2
-) l1;`;
-      const result = removeComments(code, { language: 'sql' });
+    test('extremely long HTML comment', () => {
+      const longComment = '<!-- ' + 'x'.repeat(10000) + ' -->';
+      const code = `${longComment}\n<div>Content</div>`;
+      const result = removeComments(code, { language: 'html' });
       
-      expect(result.code).toContain('SELECT * FROM');
-      expect(result.code).not.toContain('-- Level 1');
-      expect(result.code).not.toContain('-- Level 2');
-      expect(result.code).not.toContain('-- Level 3');
+      expect(result.code).toContain('<div>Content</div>');
+      expect(result.code.length).toBeLessThan(code.length);
     });
 
-    test('unicode characters in comments and strings', () => {
-      const code = `-- Коментар на кирилица
-SELECT 'Текст на кирилица' AS text;
--- 中文注释
-SELECT '中文文本' AS chinese;`;
-      const result = removeComments(code, { language: 'sql' });
+    test('unicode in CSS comments', () => {
+      const code = `/* Коментар на кирилица */
+.class { color: red; }
+/* 中文注释 */`;
+      const result = removeComments(code, { language: 'css' });
       
-      expect(result.code).toContain('Текст на кирилица');
-      expect(result.code).toContain('中文文本');
+      expect(result.code).toContain('.class');
       expect(result.code).not.toContain('Коментар');
-      expect(result.code).not.toContain('中文注释');
+      expect(result.code).not.toContain('中文');
     });
 
-    test('mixed line endings (CRLF and LF)', () => {
-      const code = `-- Comment 1\r\nSELECT * FROM users;\n-- Comment 2\r\nWHERE id = 1;`;
-      const result = removeComments(code, { language: 'sql' });
+    test('unicode in HTML comments', () => {
+      const code = `<!-- Коментар -->
+<div>Текст</div>
+<!-- 中文 -->`;
+      const result = removeComments(code, { language: 'html' });
       
-      expect(result.code).toContain('SELECT * FROM users');
-      expect(result.code).toContain('WHERE id = 1');
-      expect(result.code).not.toContain('-- Comment');
+      expect(result.code).toContain('Текст');
+      expect(result.code).not.toContain('Коментар');
+      expect(result.code).not.toContain('中文');
     });
 
-    test('escaped quotes in strings', () => {
-      const code = `SELECT 'It''s a test' AS text; -- Comment
-SELECT "Column ""Name""" FROM users; -- Another comment`;
-      const result = removeComments(code, { language: 'sql' });
+    test('mixed line endings in CSS', () => {
+      const code = `/* Comment 1 */\r\n.class { color: red; }\n/* Comment 2 */\r\n`;
+      const result = removeComments(code, { language: 'css' });
       
-      expect(result.code).toContain("'It''s a test'");
-      expect(result.code).toContain('"Column ""Name"""');
-      expect(result.code).not.toContain('-- Comment');
-      expect(result.code).not.toContain('-- Another comment');
+      expect(result.code).toContain('.class');
+      expect(result.code).not.toContain('/* Comment');
     });
 
-    test('unclosed block comment', () => {
-      const code = `/* Unclosed comment
-SELECT * FROM users;
-WHERE id = 1;`;
-      const result = removeComments(code, { language: 'sql' });
+    test('mixed line endings in HTML', () => {
+      const code = `<!-- Comment 1 -->\r\n<div>Content</div>\n<!-- Comment 2 -->\r\n`;
+      const result = removeComments(code, { language: 'html' });
       
-      // Should handle gracefully
-      expect(result.code).toBeDefined();
-      expect(typeof result.code).toBe('string');
-    });
-
-    test('comment markers in different positions', () => {
-      const code = `SELECT '--not a comment' AS text1,
-       '/* also not a comment */' AS text2,
-       column1, -- real comment
-       column2  /* real comment */
-FROM users;`;
-      const result = removeComments(code, { language: 'sql' });
-      
-      expect(result.code).toContain("'--not a comment'");
-      expect(result.code).toContain("'/* also not a comment */'");
-      expect(result.code).toContain('column1,');
-      expect(result.code).toContain('column2');
-      expect(result.code).not.toContain('real comment');
+      expect(result.code).toContain('<div>Content</div>');
+      expect(result.code).not.toContain('<!-- Comment');
     });
   });
 });
