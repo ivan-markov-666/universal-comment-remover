@@ -140,8 +140,43 @@ export function removeRubyComments(
 ): string {
   if (!code) return code;
   
-  const lines = code.split('\n');
-  const result: string[] = [];
+  // First, protect percent literals (e.g., %q{}, %w[], %r{}, etc.)
+  // This pattern matches % followed by an optional modifier (q,Q,r,R,w,W,x),
+  // a delimiter (any non-word, non-whitespace character),
+  // and everything up to the matching closing delimiter
+  // It properly handles nested delimiters and escaped characters
+  const percentLiteralPattern = /(^|\s)(%[qQrRwWx]?([^\w\s]))(?:[^\\]|\\.)*?\3/g;
+  const percentLiterals: {id: string, content: string}[] = [];
+  let percentLiteralIndex = 0;
+  
+  // First pass: protect percent literals
+  let withProtectedLiterals = code;
+  let match;
+  
+  // We need to use a while loop to handle all matches correctly
+  const regex = new RegExp(percentLiteralPattern);
+  let lastIndex = 0;
+  while ((match = regex.exec(code)) !== null) {
+    // Prevent infinite loops for zero-length matches
+    if (match.index === regex.lastIndex) {
+      regex.lastIndex++;
+    }
+    
+    const [fullMatch, prefix, , delimiter] = match;
+    const startPos = match.index + prefix.length;
+    const endPos = code.indexOf(delimiter, startPos + 1);
+    
+    if (endPos !== -1) {
+      const literalContent = code.substring(match.index, endPos + 1);
+      const id = `__PERCENT_LITERAL_${percentLiteralIndex++}__`;
+      percentLiterals.push({ id, content: literalContent });
+      withProtectedLiterals = withProtectedLiterals.replace(literalContent, id);
+    }
+  }
+  
+  // Process the code with percent literals protected
+  let result = '';
+  const lines = withProtectedLiterals.split('\n');
   let inMultilineComment = false;
   let multilineBuffer: string[] = [];
   let isLicenseBlock = false;
@@ -149,13 +184,19 @@ export function removeRubyComments(
   for (const line of lines) {
     const trimmed = line.trim();
     
+    // Skip processing if this line is part of a protected literal
+    if (line.includes('__PERCENT_LITERAL_')) {
+      result += line + '\n';
+      continue;
+    }
+    
     // Multiline comments =begin ... =end
     if (trimmed.startsWith('=begin')) {
       inMultilineComment = true;
       multilineBuffer = [line];
       isLicenseBlock = preserveLicense && isLicenseComment(line);
       if (!isLicenseBlock && keepEmptyLines) {
-        result.push('');
+        result += '\n';
       }
       continue;
     }
@@ -169,16 +210,12 @@ export function removeRubyComments(
         if (preserveLicense) {
           const blockContent = multilineBuffer.join('\n');
           if (isLicenseBlock || isLicenseComment(blockContent)) {
-            result.push(...multilineBuffer);
+            result += multilineBuffer.join('\n') + '\n';
           } else if (keepEmptyLines) {
-            for (let i = 0; i < multilineBuffer.length; i++) {
-              result.push('');
-            }
+            result += '\n'.repeat(multilineBuffer.length);
           }
         } else if (keepEmptyLines) {
-          for (let i = 0; i < multilineBuffer.length; i++) {
-            result.push('');
-          }
+          result += '\n'.repeat(multilineBuffer.length);
         }
         
         multilineBuffer = [];
@@ -187,43 +224,41 @@ export function removeRubyComments(
       continue;
     }
     
-    // Single line comments with #
-    if (trimmed.startsWith('#')) {
-      if (preserveLicense && isLicenseComment(trimmed)) {
-        result.push(line);
-      } else if (keepEmptyLines) {
-        result.push('');
-      }
-      continue;
-    }
-    
-  // Line with code and comment
-  const commentIndex = findCommentIndex(line);
-  if (commentIndex !== -1) {
-    const codeBeforeComment = line.substring(0, commentIndex).trimEnd();
-    const comment = line.substring(commentIndex);
-    
-    if (codeBeforeComment.length > 0) {
-      // There is code before the comment
-      if (preserveLicense && isLicenseComment(comment)) {
-        result.push(line); // Keep both the code and the license comment
+    // Handle single line comments with #, but not in strings or regex
+    const commentIndex = findCommentIndex(line);
+    if (commentIndex !== -1) {
+      const codeBeforeComment = line.substring(0, commentIndex).trimEnd();
+      const comment = line.substring(commentIndex);
+      
+      if (codeBeforeComment.length > 0) {
+        // There's code before the comment
+        if (preserveLicense && isLicenseComment(comment)) {
+          result += line + '\n';
+        } else {
+          result += codeBeforeComment + '\n';
+        }
       } else {
-        result.push(codeBeforeComment); // Keep only the code
+        // The line is *only* a comment
+        if (preserveLicense && isLicenseComment(comment)) {
+          result += line + '\n';
+        } else if (keepEmptyLines) {
+          result += '\n';
+        }
       }
       continue;
-    } else if (preserveLicense && isLicenseComment(comment)) {
-      result.push(line);
-    } else if (keepEmptyLines) {
-      result.push('');
     }
-    continue;
-  }
     
-    // Regular line of code
-    result.push(line);
+    // No comment on this line
+    result += line + '\n';
   }
   
-  return result.join('\n');
+  // Restore percent literals
+  result = result.replace(/__PERCENT_LITERAL_(\d+)__/g, (_, index) => {
+    const literal = percentLiterals[parseInt(index)];
+    return literal ? literal.content : '';
+  });
+  
+  return result.trimEnd();
 }
 
 /**

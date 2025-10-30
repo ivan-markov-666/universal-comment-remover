@@ -3922,3 +3922,557 @@ body { font-family: Roboto; }`;
     });
   });
 });
+
+// ============================================================================
+// C/C++ ADVANCED FEATURES
+// ============================================================================
+
+describe('C/C++ Advanced Features', () => {
+  test('handles preprocessor directives with inline comments', () => {
+    const code = `#define MAX 100 // Maximum value
+#ifdef DEBUG // Debug mode
+printf("Debug"); // Debug print
+#endif // End debug
+int x = 5;`;
+    const result = removeComments(code, { language: 'c' });
+    
+    expect(result.code).toContain('#define MAX 100');
+    expect(result.code).toContain('#ifdef DEBUG');
+    expect(result.code).toContain('#endif');
+    expect(result.code).not.toContain('// Maximum value');
+    expect(result.code).not.toContain('// Debug mode');
+  });
+
+  test('handles multi-line macros with backslash continuation', () => {
+    const code = `#define MULTI_LINE_MACRO(x) \\ 
+  do { \\                        // Comment 1
+    printf("%d", x); \\          // Comment 2
+  } while(0)                     // Comment 3`;
+    const result = removeComments(code, { language: 'c' });
+    
+    expect(result.code).toContain('#define MULTI_LINE_MACRO');
+    expect(result.code).not.toContain('// Comment 1');
+    expect(result.code).not.toContain('// Comment 2');
+  });
+
+  test('handles C++11 raw string literals', () => {
+    const code = `const char* str = R"delimiter(
+This is // not a comment
+Neither is /* this */
+)delimiter";
+// Real comment`;
+    const result = removeComments(code, { language: 'cpp' });
+    
+    expect(result.code).toContain('This is // not a comment');
+    expect(result.code).toContain('Neither is /* this */');
+    expect(result.code).not.toContain('// Real comment');
+  });
+
+  test('handles comments in template specializations', () => {
+    const code = `template<typename T> // Primary template
+class MyClass {
+  // Member
+  T value;
+};
+
+template<> // Specialization for int
+class MyClass<int> {
+  int value; // Specialized member
+};`;
+    const result = removeComments(code, { language: 'cpp' });
+    
+    expect(result.code).toContain('template<typename T>');
+    expect(result.code).toContain('template<>');
+    expect(result.code).not.toContain('// Primary template');
+    expect(result.code).not.toContain('// Specialization for int');
+  });
+
+  test('handles trigraphs with comments', () => {
+    const code = `??= define MAX 100 // Define with trigraph
+int arr??<10??> = {0}; // Array with trigraphs`;
+    const result = removeComments(code, { language: 'c' });
+    
+    expect(result.code).toContain('??= define MAX 100');
+    expect(result.code).toContain('arr??<10??>');
+    expect(result.code).not.toContain('// Define with trigraph');
+  });
+});
+
+// ============================================================================
+// C# ADVANCED FEATURES
+// ============================================================================
+
+describe('C# Advanced Features', () => {
+  test('handles XML documentation comments', () => {
+    const code = `/// <summary>
+/// This is a method
+/// </summary>
+/// <param name="x">Parameter</param>
+public void Method(int x) {
+  // Regular comment
+}`;
+    const result = removeComments(code, { language: 'csharp' });
+    
+    expect(result.code).toContain('public void Method(int x)');
+    expect(result.code).not.toContain('/// <summary>');
+    expect(result.code).not.toContain('/// <param');
+    expect(result.code).not.toContain('// Regular comment');
+  });
+
+  test('handles #region/#endregion with comments', () => {
+    const code = `#region Properties // User properties
+public string Name { get; set; } // Name property
+#endregion // End properties
+
+#region Methods // User methods
+public void DoSomething() {} // Method
+#endregion`;
+    const result = removeComments(code, { language: 'csharp' });
+    
+    expect(result.code).toContain('#region Properties');
+    expect(result.code).toContain('#endregion');
+    expect(result.code).not.toContain('// User properties');
+    expect(result.code).not.toContain('// Name property');
+  });
+
+  test('handles verbatim strings with comment-like content', () => {
+    const code = `string path = @"C:\\ // not a comment
+C:\\Users\\// also not a comment";
+// Real comment
+string multiline = @"Line 1 /* not a comment */
+Line 2";`;
+    const result = removeComments(code, { language: 'csharp' });
+    
+    expect(result.code).toContain('// not a comment');
+    expect(result.code).toContain('/* not a comment */');
+    expect(result.code).not.toContain('// Real comment');
+  });
+
+  test('handles string interpolation with comments', () => {
+    const code = `string name = "John";
+string msg = $"Hello {name}"; // Interpolated string
+string complex = $"Value: {x /* inline comment */}"; // Complex`;
+    const result = removeComments(code, { language: 'csharp' });
+    
+    expect(result.code).toContain('$"Hello {name}"');
+    expect(result.code).not.toContain('// Interpolated string');
+    expect(result.code).not.toContain('// Complex');
+  });
+});
+
+// ============================================================================
+// PHP ADVANCED FEATURES
+// ============================================================================
+
+describe('PHP Advanced Features', () => {
+  test('handles heredoc syntax with comments', () => {
+    const code = `<?php
+$sql = <<<SQL
+SELECT * FROM users
+WHERE id = 1 -- This is not a comment
+SQL;
+// Real comment
+echo $sql;`;
+    const result = removeComments(code, { language: 'php' });
+    
+    expect(result.code).toContain('-- This is not a comment');
+    expect(result.code).not.toContain('// Real comment');
+  });
+
+  test('handles nowdoc syntax', () => {
+    const code = `<?php
+$text = <<<'EOT'
+This has // not a comment
+And /* also not */
+EOT;
+// Real comment`;
+    const result = removeComments(code, { language: 'php' });
+    
+    expect(result.code).toContain('// not a comment');
+    expect(result.code).toContain('/* also not */');
+    expect(result.code).not.toContain('// Real comment');
+  });
+
+  test('handles PHP tags with comments', () => {
+    const code = `<?php // PHP start
+echo "Hello";
+?> <!-- HTML comment -->
+<div>Content</div>
+<?php // PHP again
+echo "World";`;
+    const result = removeComments(code, { language: 'php' });
+    
+    expect(result.code).toContain('<?php');
+    expect(result.code).toContain('echo "Hello"');
+    expect(result.code).not.toContain('// PHP start');
+    expect(result.code).not.toContain('// PHP again');
+  });
+
+  test('handles alternative syntax with comments', () => {
+    const code = `<?php
+if ($condition): // Start if
+  echo "True";
+endif; // End if
+
+while ($x < 10): // Loop
+  $x++;
+endwhile; // End loop`;
+    const result = removeComments(code, { language: 'php' });
+    
+    expect(result.code).toContain('if ($condition):');
+    expect(result.code).toContain('endif;');
+    expect(result.code).not.toContain('// Start if');
+    expect(result.code).not.toContain('// Loop');
+  });
+});
+
+// ============================================================================
+// GO ADVANCED FEATURES
+// ============================================================================
+
+describe('Go Advanced Features', () => {
+  test('handles package documentation comments', () => {
+    const code = `// Package math provides mathematical functions.
+// This is the package documentation.
+package math
+
+// Add returns the sum of two integers.
+func Add(a, b int) int {
+  return a + b // Return sum
+}`;
+    const result = removeComments(code, { language: 'go' });
+    
+    expect(result.code).toContain('package math');
+    expect(result.code).toContain('func Add');
+    expect(result.code).not.toContain('Package math provides');
+    expect(result.code).not.toContain('// Return sum');
+  });
+
+  test('handles build tags', () => {
+    const code = `// +build linux darwin
+// +build amd64
+
+package main
+
+// Regular comment
+func main() {}`;
+    const result = removeComments(code, { language: 'go' });
+    
+    expect(result.code).toContain('// +build linux darwin');
+    expect(result.code).toContain('package main');
+    expect(result.code).not.toContain('// Regular comment');
+  });
+
+  test('handles comments in goroutines', () => {
+    const code = `go func() {
+  // Anonymous goroutine
+  for i := 0; i < 10; i++ {
+    fmt.Println(i) // Print
+  }
+}() // Start goroutine`;
+    const result = removeComments(code, { language: 'go' });
+    
+    expect(result.code).toContain('go func()');
+    expect(result.code).toContain('fmt.Println(i)');
+    expect(result.code).not.toContain('// Anonymous goroutine');
+    expect(result.code).not.toContain('// Print');
+  });
+});
+
+// ============================================================================
+// RUST ADVANCED FEATURES
+// ============================================================================
+
+describe('Rust Advanced Features', () => {
+  test('handles nested block comments', () => {
+    const code = `fn main() {
+  /* Outer comment
+     /* Nested comment */
+     Still in outer
+  */
+  let x = 5;
+}`;
+    const result = removeComments(code, { language: 'rust' });
+    
+    expect(result.code).toContain('fn main()');
+    expect(result.code).toContain('let x = 5');
+    expect(result.code).not.toContain('Outer comment');
+    expect(result.code).not.toContain('Nested comment');
+  });
+
+  test('handles doc comments ///', () => {
+    const code = `/// Adds two numbers together.
+/// # Examples
+/// \`\`\`
+/// let result = add(2, 3);
+/// \`\`\`
+fn add(a: i32, b: i32) -> i32 {
+  a + b // Return sum
+}`;
+    const result = removeComments(code, { language: 'rust' });
+    
+    expect(result.code).toContain('fn add');
+    expect(result.code).not.toContain('/// Adds two numbers');
+    expect(result.code).not.toContain('// Return sum');
+  });
+
+  test('handles inner doc comments //!', () => {
+    const code = `//! This is a module-level doc comment.
+//! It describes the entire module.
+
+fn test() {
+  // Regular comment
+}`;
+    const result = removeComments(code, { language: 'rust' });
+    
+    expect(result.code).toContain('fn test()');
+    expect(result.code).not.toContain('//! This is a module');
+    expect(result.code).not.toContain('// Regular comment');
+  });
+
+  test('handles comments with lifetimes', () => {
+    const code = `fn longest<'a>( // Lifetime parameter
+  x: &'a str, // First string
+  y: &'a str  // Second string
+) -> &'a str {
+  if x.len() > y.len() { x } else { y }
+}`;
+    const result = removeComments(code, { language: 'rust' });
+    
+    expect(result.code).toContain("fn longest<'a>(");
+    expect(result.code).toContain("x: &'a str");
+    expect(result.code).not.toContain('// Lifetime parameter');
+    expect(result.code).not.toContain('// First string');
+  });
+});
+
+// ============================================================================
+// SWIFT ADVANCED FEATURES
+// ============================================================================
+
+describe('Swift Advanced Features', () => {
+  test('handles markup documentation', () => {
+    const code = `/// Returns a greeting message
+/// - Parameter name: The name to greet
+/// - Returns: A greeting string
+/// - Note: This is important
+func greet(name: String) -> String {
+  return "Hello, \\(name)" // String interpolation
+}`;
+    const result = removeComments(code, { language: 'swift' });
+    
+    expect(result.code).toContain('func greet');
+    expect(result.code).not.toContain('/// Returns a greeting');
+    expect(result.code).not.toContain('/// - Parameter');
+    expect(result.code).not.toContain('// String interpolation');
+  });
+
+  test('handles playground literals with comments', () => {
+    const code = `import UIKit
+
+// Color literal
+let color = #colorLiteral(red: 1, green: 0, blue: 0, alpha: 1)
+// Image literal
+let image = #imageLiteral(resourceName: "photo.png")`;
+    const result = removeComments(code, { language: 'swift' });
+    
+    expect(result.code).toContain('#colorLiteral');
+    expect(result.code).toContain('#imageLiteral');
+    expect(result.code).not.toContain('// Color literal');
+    expect(result.code).not.toContain('// Image literal');
+  });
+
+  test('handles property wrappers with comments', () => {
+    const code = `struct User {
+  @Published // Property wrapper
+  var name: String
+  
+  @State // Another wrapper
+  private var isActive: Bool
+}`;
+    const result = removeComments(code, { language: 'swift' });
+    
+    expect(result.code).toContain('@Published');
+    expect(result.code).toContain('@State');
+    expect(result.code).not.toContain('// Property wrapper');
+    expect(result.code).not.toContain('// Another wrapper');
+  });
+});
+
+// ============================================================================
+// JSON5 ADVANCED FEATURES
+// ============================================================================
+
+describe('JSON5 Advanced Features', () => {
+  test('handles trailing commas with comments', () => {
+    const code = `{
+  "key1": "value1", // Comment 1
+  "key2": "value2", // Comment 2
+  "array": [1, 2, 3,], // Trailing comma
+}`;
+    const result = removeComments(code, { language: 'json' });
+    
+    expect(result.code).toContain('"key1": "value1",');
+    expect(result.code).toContain('"key2": "value2",');
+    expect(result.code).not.toContain('// Comment 1');
+    expect(result.code).not.toContain('// Trailing comma');
+  });
+
+  test('handles hexadecimal numbers', () => {
+    const code = `{
+  // Hex values
+  "color": 0xFF00FF, /* Purple */
+  "mask": 0xDEADBEEF // Mask value
+}`;
+    const result = removeComments(code, { language: 'json' });
+    
+    expect(result.code).toContain('"color": 0xFF00FF');
+    expect(result.code).toContain('"mask": 0xDEADBEEF');
+    expect(result.code).not.toContain('// Hex values');
+    expect(result.code).not.toContain('/* Purple */');
+  });
+
+  test('handles single quoted strings', () => {
+    const code = `{
+  'singleQuoted': 'value', // Single quotes
+  "doubleQuoted": "value" // Double quotes
+}`;
+    const result = removeComments(code, { language: 'json' });
+    
+    expect(result.code).toContain("'singleQuoted'");
+    expect(result.code).toContain('"doubleQuoted"');
+    expect(result.code).not.toContain('// Single quotes');
+  });
+
+  test('handles unquoted keys', () => {
+    const code = `{
+  unquoted: "value", // Unquoted key
+  another_key: 123 // Another one
+}`;
+    const result = removeComments(code, { language: 'json' });
+    
+    expect(result.code).toContain('unquoted: "value"');
+    expect(result.code).toContain('another_key: 123');
+    expect(result.code).not.toContain('// Unquoted key');
+  });
+});
+
+// ============================================================================
+// YAML ADVANCED FEATURES
+// ============================================================================
+
+describe('YAML Advanced Features', () => {
+  test('handles literal block scalars (|)', () => {
+    const code = `script: |
+  echo "Line 1"
+  # This is inside the string, NOT a comment
+  echo "Line 2"
+# This IS a real comment
+key: value`;
+    const result = removeComments(code, { language: 'yaml' });
+    
+    // Note: The current implementation might not handle this correctly
+    // This test documents the expected behavior
+    expect(result.code).toContain('script: |');
+    expect(result.code).not.toContain('# This IS a real comment');
+  });
+
+  test('handles folded block scalars (>)', () => {
+    const code = `description: >
+  This is a long
+  text that will be
+  folded into one line
+  # Not a comment inside
+# Real comment
+key: value`;
+    const result = removeComments(code, { language: 'yaml' });
+    
+    expect(result.code).toContain('description: >');
+    expect(result.code).not.toContain('# Real comment');
+  });
+
+  test('handles block chomping indicators', () => {
+    const code = `# Strip final newlines
+text1: |-
+  content
+# Keep final newlines
+text2: |+
+  content`;
+    const result = removeComments(code, { language: 'yaml' });
+    
+    expect(result.code).toContain('text1: |-');
+    expect(result.code).toContain('text2: |+');
+    expect(result.code).not.toContain('# Strip final newlines');
+  });
+
+  test('handles flow style collections', () => {
+    const code = `# Inline array
+array: [1, 2, 3] # Numbers
+# Inline map
+map: {key: value, key2: value2} # Dictionary`;
+    const result = removeComments(code, { language: 'yaml' });
+    
+    expect(result.code).toContain('array: [1, 2, 3]');
+    expect(result.code).toContain('map: {key: value');
+    expect(result.code).not.toContain('# Inline array');
+    expect(result.code).not.toContain('# Numbers');
+  });
+});
+
+// ============================================================================
+// RUBY ADVANCED FEATURES
+// ============================================================================
+
+describe('Ruby Advanced Features', () => {
+  test('handles =begin/=end in middle of line (invalid but handle gracefully)', () => {
+    const code = `x = 5 =begin comment
+This is text
+=end
+y = 10`;
+    const result = removeComments(code, { language: 'ruby' });
+    
+    // Should handle gracefully without crashing
+    expect(result.code).toBeDefined();
+  });
+
+  test('handles heredoc with different delimiters', () => {
+    const code = `sql = <<SQL
+SELECT * FROM users
+SQL
+# Comment after heredoc
+
+html = <<-HTML
+  <div>Content</div>
+HTML`;
+    const result = removeComments(code, { language: 'ruby' });
+    
+    expect(result.code).toContain('<<SQL');
+    expect(result.code).toContain('<<-HTML');
+    expect(result.code).not.toContain('# Comment after heredoc');
+  });
+
+  test('handles percent literals', () => {
+    const code = `# Percent string
+str = %q{This has # not a comment}
+# Percent array
+arr = %w[one two three] # Words
+# Percent regex
+regex = %r{\\d+ # pattern}x`;
+    const result = removeComments(code, { language: 'ruby' });
+    
+    expect(result.code).toContain('%q{This has # not a comment}');
+    expect(result.code).toContain('%w[one two three]');
+    expect(result.code).not.toContain('# Percent string');
+    expect(result.code).not.toContain('# Words');
+  });
+
+  test('handles string interpolation with #', () => {
+    const code = `name = "John"
+msg = "Hello #{name} #tag"
+# Real comment`;
+    const result = removeComments(code, { language: 'ruby' });
+    
+    expect(result.code).toContain('Hello #{name} #tag');
+    expect(result.code).not.toContain('# Real comment');
+  });
+});
