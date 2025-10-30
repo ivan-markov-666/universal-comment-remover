@@ -107,8 +107,9 @@ export function detectLanguageByContent(code: string): Lang | undefined {
   }
   
   // JSON - check for valid JSON syntax
-  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-      (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+  if (trimmed.length > 4 && // Require minimum length for meaningful JSON
+      ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+       (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
     try {
       JSON.parse(trimmed);
       return 'json';
@@ -117,9 +118,29 @@ export function detectLanguageByContent(code: string): Lang | undefined {
     }
   }
   
-  // Python - check for Python-specific keywords
-  if (/^(def|class|import|from)\s+/m.test(trimmed) ||
-      /:\s*$/m.test(trimmed)) {
+  // Ruby - check for Ruby-specific patterns first (before Python since they share some syntax)
+  // Check for Ruby's def/end pattern
+  if ((/^\s*def\s+\w+\s*[\s\S]*?\n\s*end\b/m.test(trimmed) && /\bend\b/m.test(trimmed)) ||
+      // Ruby's class/module with end
+      /^\s*(class|module)\s+[\w:]+\s*(<\s*[\w:]+)?\s*\n[\s\S]*?\n\s*end\b/m.test(trimmed) ||
+      // Ruby's puts with string
+      /\bputs\s+["']/.test(trimmed) ||
+      // Ruby's begin/end blocks
+      /\bbegin\b[\s\S]*?\bend\b/m.test(trimmed) ||
+      // Ruby's do/end blocks
+      /\bdo\s*\|.*\|\s*\n[\s\S]*?\n\s*end\b/m.test(trimmed) ||
+      // Ruby's multi-line comments
+      /^=begin\s*\n[\s\S]*?\n=end\b/m.test(trimmed)) {
+    return 'ruby';
+  }
+  
+  // Python - check for Python-specific keywords with more specific patterns
+  // Check for Python's def with colon and indentation
+  if (/^\s*def\s+\w+\s*\([^)]*\)\s*:/m.test(trimmed) ||
+      // Python's class with colon and inheritance
+      /^\s*class\s+\w+\s*(\([^)]*\))?\s*:/m.test(trimmed) ||
+      // Python's import/from with newline or end of string
+      /^\s*(import|from)\s+\w+/m.test(trimmed) && !/[{};]/.test(trimmed)) {
     return 'python';
   }
   
@@ -131,13 +152,6 @@ export function detectLanguageByContent(code: string): Lang | undefined {
   // SQL - check for SQL keywords
   if (/^(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\s+/im.test(trimmed)) {
     return 'sql';
-  }
-  
-  // Ruby - check for Ruby-specific patterns
-  if (/^(def|class|module|require)\s+/m.test(trimmed) ||
-      trimmed.includes('puts ') ||
-      /=begin[\s\S]*=end/m.test(trimmed)) {
-    return 'ruby';
   }
   
   // Java - check for Java-specific patterns
