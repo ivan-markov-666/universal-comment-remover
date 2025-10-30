@@ -22,7 +22,7 @@ import {
 import { removeJsonComments, removeYamlComments, removeRubyComments } from './removers/other-remover';
 
 import { Lang, RemoveOptions, RemoveResult } from './types';
-import { detectLanguage, detectLanguageByFilename, detectLanguageByContent } from './detectors/language-detector';
+import { detectLanguage, detectLanguageByFilename } from './detectors/language-detector';
 
 /**
  * Премахва коментари от код на различни програмни езици
