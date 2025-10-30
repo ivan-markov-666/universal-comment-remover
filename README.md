@@ -1,24 +1,24 @@
 # Universal Comment Remover
 
-🚀 Универсален инструмент за премахване на коментари от код на множество програмни езици, разработен с TypeScript.
+🚀 A universal tool for removing comments from code in multiple programming languages, built with TypeScript.
 
-## ✨ Възможности
+## ✨ Features
 
-- 🌐 **Поддръжка на 18+ езика**: JavaScript, TypeScript, Python, Java, C#, C, C++, Ruby, PHP, Go, Rust, Swift, HTML, CSS, SQL, YAML, JSON, XML
-- 🔍 **Автоматично разпознаване на език** по файлово разширение или съдържание
-- 📝 **Запазване на лицензионни коментари** (опционално)
-- 🔒 **Типова безопасност** с пълна TypeScript поддръжка
-- ⚡ **Висока производителност** с минимални зависимости
-- 🧪 **Dry-run режим** за предварителен преглед
-- 📦 **Лесна интеграция** в Node.js и TypeScript проекти
+- 🌐 **Support for 18+ languages**: JavaScript, TypeScript, Python, Java, C#, C, C++, Ruby, PHP, Go, Rust, Swift, HTML, CSS, SQL, YAML, JSON, XML
+- 🔍 **Automatic language detection** by file extension or content
+- 📝 **Preserve license comments** (optional)
+- 🔒 **Type safety** with full TypeScript support
+- ⚡ **High performance** with minimal dependencies
+- 🧪 **Dry-run mode** for preview
+- 📦 **Easy integration** with Node.js and TypeScript projects
 
-## 📦 Инсталация
+## 📦 Installation
 
 ```bash
 npm install universal-comment-remover
 ```
 
-## 🚀 Бърз старт
+## 🚀 Quick Start
 
 ### TypeScript
 
@@ -34,7 +34,7 @@ const hello = () => {
 
 const result = removeComments(code, { language: 'javascript' });
 console.log(result.code);
-// Изход:
+// Output:
 // const hello = () => {
 //   console.log("Hello World");
 // };
@@ -58,26 +58,26 @@ import { removeComments } from 'universal-comment-remover';
 const result = removeComments(myCode, { filename: 'script.js' });
 ```
 
-## 📖 API Документация
+## 📖 API Documentation
 
 ### `removeComments(code: string, options?: RemoveOptions): RemoveResult`
 
-Главна функция за премахване на коментари.
+Main function for removing comments.
 
-#### Параметри
+#### Parameters
 
-- **`code`** (string): Входен код за обработка
-- **`options`** (RemoveOptions, опционално): Опции за настройка
+- **`code`** (string): Input code to process
+- **`options`** (RemoveOptions, optional): Configuration options
 
 #### RemoveOptions
 
 ```typescript
 interface RemoveOptions {
-  language?: Lang;              // Явно указване на език
-  filename?: string;            // Име на файл за автоматично разпознаване
-  preserveLicense?: boolean;    // Запазване на лицензионни коментари (default: false)
-  dryRun?: boolean;            // Режим за тестване без промяна (default: false)
-  keepEmptyLines?: boolean;    // Запазване на празни редове (default: false)
+  language?: Lang;              // Explicitly specify language
+  filename?: string;            // Filename for auto-detection
+  preserveLicense?: boolean;    // Preserve license comments (default: false)
+  dryRun?: boolean;            // Test mode without changes (default: false)
+  keepEmptyLines?: boolean;    // Preserve empty lines (default: false)
 }
 ```
 
@@ -85,13 +85,13 @@ interface RemoveOptions {
 
 ```typescript
 interface RemoveResult {
-  code: string;                 // Обработеният код
-  removedCount: number;         // Брой премахнати коментари
-  detectedLanguage?: Lang;      // Автоматично разпознатият език
+  code: string;                 // Processed code
+  removedCount: number;         // Number of comments removed
+  detectedLanguage?: Lang;      // Auto-detected language
 }
 ```
 
-#### Поддържани езици (Lang)
+#### Supported Languages (Lang)
 
 ```typescript
 type Lang = 
@@ -102,24 +102,24 @@ type Lang =
   | "rust" | "swift";
 ```
 
-## 🎯 Примери за употреба
+## 🎯 Usage Examples
 
-### Автоматично разпознаване на език
+### Automatic Language Detection
 
 ```typescript
 import { removeComments } from 'universal-comment-remover';
 
-// По име на файл
+// By filename
 const result1 = removeComments(code, { filename: 'script.py' });
 console.log(result1.detectedLanguage); // "python"
 
-// По съдържание
+// By content
 const htmlCode = '<!DOCTYPE html><!-- Comment --><html></html>';
 const result2 = removeComments(htmlCode);
 console.log(result2.detectedLanguage); // "html"
 ```
 
-### Запазване на лицензионни коментари
+### Preserving License Comments
 
 ```typescript
 const code = `
@@ -134,12 +134,12 @@ const result = removeComments(code, {
 });
 
 console.log(result.code);
-// Изход:
+// Output:
 // /*! MIT License - Copyright (c) 2024 */
 // const x = 5;
 ```
 
-### Dry-run режим
+### Dry-run Mode
 
 ```typescript
 const code = '// Comment\nconst x = 5;';
@@ -149,11 +149,11 @@ const result = removeComments(code, {
   dryRun: true
 });
 
-console.log(result.code === code); // true (кодът не е променен)
-console.log(result.removedCount);  // 1 (колко коментари биха били премахнати)
+console.log(result.code === code); // true (code was not modified)
+console.log(result.removedCount);  // 1 (number of comments that would be removed)
 ```
 
-### Работа с различни езици
+### Working with Different Languages
 
 #### Python
 
@@ -212,7 +212,7 @@ SELECT * FROM users;
 const result = removeComments(sqlCode, { language: 'sql' });
 ```
 
-## 🔧 CLI употреба (идея за бъдеща версия)
+## 🔧 CLI Usage (Planned for Future Version)
 
 ```bash
 # Премахване на коментари от файл
@@ -225,7 +225,7 @@ ucr src/**/*.ts --preserve-license
 ucr script.py --dry-run
 ```
 
-## 🧪 Тестване
+## 🧪 Testing
 
 ```bash
 # Изпълнение на тестове
@@ -238,7 +238,7 @@ npm test -- --coverage
 npm test -- --watch
 ```
 
-## 🏗️ Разработка
+## 🏗️ Development
 
 ```bash
 # Клониране на репото
@@ -255,7 +255,7 @@ npm run build
 npm run dev
 ```
 
-## 📁 Структура на проекта
+## 📁 Project Structure
 
 ```
 universal-comment-remover/
@@ -278,39 +278,39 @@ universal-comment-remover/
 └── README.md
 ```
 
-## 🤝 Принос
+## 🤝 Contributing
 
-Приносът е добре дошъл! Моля следвайте тези стъпки:
+Contributions are welcome! Please follow these steps:
 
-1. Fork на репото
-2. Създайте feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit на промените (`git commit -m 'Add amazing feature'`)
-4. Push към branch (`git push origin feature/amazing-feature`)
-5. Отворете Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📝 Лиценз
+## 📝 License
 
-MIT License - вижте [LICENSE](LICENSE) файла за детайли.
+MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Признания
+## 🙏 Acknowledgments
 
-- [strip-comments](https://github.com/jonschlinkert/strip-comments) - за JavaScript коментари
-- [strip-json-comments](https://github.com/sindresorhus/strip-json-comments) - за JSON коментари
+- [strip-comments](https://github.com/jonschlinkert/strip-comments) - for JavaScript comments
+- [strip-json-comments](https://github.com/sindresorhus/strip-json-comments) - for JSON comments
 
-## 📞 Контакт
+## 📞 Contact
 
 - GitHub: [yourusername](https://github.com/yourusername)
 - Issues: [github.com/yourusername/universal-comment-remover/issues](https://github.com/yourusername/universal-comment-remover/issues)
 
 ## 🗺️ Roadmap
 
-- [ ] CLI инструмент
-- [ ] Поддръжка на повече езици (Kotlin, Scala, Haskell)
-- [ ] Плъгини за редактори (VS Code, IntelliJ)
-- [ ] GitHub Action за автоматично премахване на коментари
-- [ ] Stream API за обработка на големи файлове
-- [ ] Конфигурационни файлове (.ucremoverrc)
+- [ ] CLI tool
+- [ ] Support for more languages (Kotlin, Scala, Haskell)
+- [ ] Editor plugins (VS Code, IntelliJ)
+- [ ] GitHub Action for automatic comment removal
+- [ ] Stream API for large file processing
+- [ ] Configuration files (.ucremoverrc)
 
 ---
 
-⭐ Ако този проект ви е полезен, дайте му звезда на GitHub!
+⭐ If you find this project useful, give it a star on GitHub!

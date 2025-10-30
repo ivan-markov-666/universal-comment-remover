@@ -1,10 +1,10 @@
 import stripComments from 'strip-comments';
 
 /**
- * Премахва коментари от JavaScript/TypeScript код
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари
- * @returns Обработен код
+ * Removes comments from JavaScript/TypeScript code
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments
+ * @returns Processed code
  */
 export function removeJavaScriptComments(code: string, preserveLicense: boolean = false): string {
   if (!code) return code;
@@ -44,10 +44,10 @@ export function removeJavaScriptComments(code: string, preserveLicense: boolean 
 }
 
 /**
- * Премахва коментари от TypeScript код (използва същата логика като JavaScript)
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари
- * @returns Обработен код
+ * Removes comments from TypeScript code (uses the same logic as JavaScript)
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments
+ * @returns Processed code
  */
 export function removeTypeScriptComments(code: string, preserveLicense: boolean = false): string {
   return removeJavaScriptComments(code, preserveLicense);

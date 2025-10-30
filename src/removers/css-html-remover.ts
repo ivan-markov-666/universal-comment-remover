@@ -1,20 +1,20 @@
 /**
- * Премахва коментари от CSS код
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари
- * @returns Обработен код
+ * Removes comments from CSS code
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments
+ * @returns Processed code
  */
 export function removeCssComments(code: string, preserveLicense: boolean = false): string {
   if (!code) return code;
   
-  // CSS коментари са /* ... */
+  // CSS comments are /* ... */
   const commentRegex = /\/\*[\s\S]*?\*\//g;
   
   if (!preserveLicense) {
     return code.replace(commentRegex, '');
   }
   
-  // Запази само license коментари
+  // Keep only license comments
   return code.replace(commentRegex, (match) => {
     const lower = match.toLowerCase();
     if (lower.includes('copyright') ||
@@ -29,22 +29,22 @@ export function removeCssComments(code: string, preserveLicense: boolean = false
 }
 
 /**
- * Премахва коментари от HTML код
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари
- * @returns Обработен код
+ * Removes comments from HTML code
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments
+ * @returns Processed code
  */
 export function removeHtmlComments(code: string, preserveLicense: boolean = false): string {
   if (!code) return code;
   
-  // HTML коментари са <!-- ... -->
+  // HTML comments are <!-- ... -->
   const commentRegex = /<!--[\s\S]*?-->/g;
   
   if (!preserveLicense) {
     return code.replace(commentRegex, '');
   }
   
-  // Запази само license коментари
+  // Keep only license comments
   return code.replace(commentRegex, (match) => {
     const lower = match.toLowerCase();
     if (lower.includes('copyright') ||
@@ -58,10 +58,10 @@ export function removeHtmlComments(code: string, preserveLicense: boolean = fals
 }
 
 /**
- * Премахва коментари от XML код (използва същата логика като HTML)
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари
- * @returns Обработен код
+ * Removes comments from XML code (uses the same logic as HTML)
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments
+ * @returns Processed code
  */
 export function removeXmlComments(code: string, preserveLicense: boolean = false): string {
   return removeHtmlComments(code, preserveLicense);

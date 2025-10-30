@@ -1,8 +1,8 @@
 /**
- * Премахва коментари от Python код
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари
- * @returns Обработен код
+ * Removes comments from Python code
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments
+ * @returns Processed code
  */
 export function removePythonComments(code: string, preserveLicense: boolean = false): string {
   if (!code) return code;
@@ -17,7 +17,7 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
     let line = lines[i];
     const trimmed = line.trim();
     
-    // Проверка за начало на multiline string (""" или ''')
+    // Check for start of multiline string (""" or ''')
     if (!inMultilineString) {
       const tripleDoubleMatch = line.indexOf('"""');
       const tripleSingleMatch = line.indexOf("'''");
@@ -34,7 +34,7 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
       }
       
       if (matchIndex !== -1) {
-        // Намерен multiline string
+        // Found multiline string
         const afterQuote = line.substring(matchIndex + 3);
         const closingIndex = afterQuote.indexOf(quote);
         
@@ -51,7 +51,7 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
             result.push(line);
           }
         } else {
-          // Multi-line docstring начало
+          // Multi-line docstring start
           const beforeQuote = line.substring(0, matchIndex);
           const isDocstring = beforeQuote.trim().length === 0 && isDocstringContext(lines, i);
           
@@ -74,7 +74,7 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
         }
       }
     } else {
-      // Вътре в multiline string
+      // Inside multiline string
       if (line.includes(multilineQuote)) {
         inMultilineString = false;
         multilineQuote = '';
@@ -86,14 +86,14 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
         continue;
       }
       
-      // Все още в multiline string
+      // Still in multiline string
       if (!skipDocstring) {
         result.push(line);
       }
       continue;
     }
     
-    // Single line коментари с #
+    // Single line comments with #
     if (trimmed.startsWith('#')) {
       if (preserveLicense && isLicenseComment(trimmed)) {
         result.push(line);
@@ -101,7 +101,7 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
       continue;
     }
     
-    // Ред с код и коментар
+    // Line with code and comment
     const commentIndex = findCommentIndex(line);
     if (commentIndex !== -1) {
       const codeBeforeComment = line.substring(0, commentIndex).trimEnd();
@@ -111,7 +111,7 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
       continue;
     }
     
-    // Обикновен ред с код
+    // Regular line of code
     result.push(line);
   }
   
@@ -119,21 +119,21 @@ export function removePythonComments(code: string, preserveLicense: boolean = fa
 }
 
 /**
- * Проверява дали текущата позиция е в контекст за docstring
+ * Checks if the current position is in a docstring context
  */
 function isDocstringContext(lines: string[], index: number): boolean {
   if (index === 0) return false;
   
-  // Провери предишните редове
+  // Check previous lines
   for (let i = index - 1; i >= 0; i--) {
     const prevLine = lines[i].trim();
     
     if (prevLine.length === 0) {
-      // Празен ред, продължаваме
+      // Empty line, continue
       continue;
     }
     
-    // Проверка за def, class или : в края (функция/клас/метод)
+    // Check for def, class or : at the end (function/class/method)
     if (prevLine.startsWith('def ') || 
         prevLine.startsWith('class ') ||
         prevLine.startsWith('async def ') ||
@@ -141,7 +141,7 @@ function isDocstringContext(lines: string[], index: number): boolean {
       return true;
     }
     
-    // Ако има друг код, не е docstring
+    // If there's other code, it's not a docstring
     return false;
   }
   
@@ -149,7 +149,7 @@ function isDocstringContext(lines: string[], index: number): boolean {
 }
 
 /**
- * Проверява дали коментарът е лицензионен
+ * Checks if the comment is a license comment
  */
 function isLicenseComment(comment: string): boolean {
   const lower = comment.toLowerCase();
@@ -161,7 +161,7 @@ function isLicenseComment(comment: string): boolean {
 }
 
 /**
- * Намира индекса на # коментар в реда (игнорира # в стрингове)
+ * Finds the index of a # comment in a line (ignores # in strings)
  */
 function findCommentIndex(line: string): number {
   let inString = false;

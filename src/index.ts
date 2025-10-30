@@ -1,10 +1,10 @@
-// Експортиране на типове
+// Export types
 export { Lang, RemoveOptions, RemoveResult } from './types';
 
-// Експортиране на детектори
+// Export detectors
 export { detectLanguage, detectLanguageByFilename, detectLanguageByContent } from './detectors/language-detector';
 
-// Импортиране на removers
+// Import removers
 import { removeJavaScriptComments, removeTypeScriptComments } from './removers/javascript-remover';
 import { removePythonComments } from './removers/python-remover';
 import { removeCssComments, removeHtmlComments, removeXmlComments } from './removers/css-html-remover';
@@ -25,11 +25,11 @@ import { Lang, RemoveOptions, RemoveResult } from './types';
 import { detectLanguage, detectLanguageByFilename } from './detectors/language-detector';
 
 /**
- * Премахва коментари от код на различни програмни езици
+ * Removes comments from code in various programming languages
  * 
- * @param code - Входният код за обработка
- * @param options - Опции за премахване на коментари
- * @returns Резултат с обработения код и метаданни
+ * @param code - The input code to process
+ * @param options - Comment removal options
+ * @returns Result with processed code and metadata
  * 
  * @example
  * ```typescript
@@ -46,10 +46,10 @@ export function removeComments(code: string, options: RemoveOptions = {}): Remov
     };
   }
   
-  // Определяне на езика - filename има предимство пред language параметъра
+  // Determine the language - filename takes precedence over language parameter
   let language = options.language;
   
-  // Ако има filename, опитай се да детектираш по него (override-ва language ако е успешно)
+  // If filename exists, try to detect language from it (overrides language parameter if successful)
   if (options.filename) {
     const detectedByFilename = detectLanguageByFilename(options.filename);
     if (detectedByFilename) {
@@ -57,13 +57,13 @@ export function removeComments(code: string, options: RemoveOptions = {}): Remov
     }
   }
   
-  // Ако все още няма език, опитай автоматично разпознаване
+  // If still no language, try automatic detection
   if (!language) {
     language = detectLanguage(undefined, code);
   }
   
   if (!language) {
-    // Не можем да определим езика
+    // Cannot determine the language
     return {
       code: code,
       removedCount: 0,
@@ -71,7 +71,7 @@ export function removeComments(code: string, options: RemoveOptions = {}): Remov
     };
   }
   
-  // Dry run режим - брои коментари като взема предвид preserveLicense
+  // Dry run mode - count comments while considering preserveLicense
   if (options.dryRun) {
     const commentCount = countComments(code, language, options.preserveLicense || false);
     return {
@@ -81,7 +81,7 @@ export function removeComments(code: string, options: RemoveOptions = {}): Remov
     };
   }
   
-  // Премахване на коментари според езика
+  // Remove comments based on language
   const preserveLicense = options.preserveLicense || false;
   let processedCode = code;
   
@@ -169,20 +169,20 @@ export function removeComments(code: string, options: RemoveOptions = {}): Remov
 }
 
 /**
- * Брои коментари в код (приблизително)
- * @param code - Кодът за анализ
- * @param language - Програмният език
- * @param preserveLicense - Дали license коментарите се запазват (не се броят)
+ * Counts comments in code (approximate)
+ * @param code - The code to analyze
+ * @param language - The programming language
+ * @param preserveLicense - Whether license comments are preserved (not counted)
  */
 function countComments(code: string, language: Lang, preserveLicense: boolean = false): number {
   const lines = code.split('\n');
   let count = 0;
   
-  // Опростена логика за броене на коментари
+  // Simplified logic for counting comments
   for (const line of lines) {
     const trimmed = line.trim();
     
-    // Ако е license коментар и preserveLicense е true, не го броим
+    // If it's a license comment and preserveLicense is true, don't count it
     if (preserveLicense && isLicenseLine(trimmed)) {
       continue;
     }
@@ -232,7 +232,7 @@ function countComments(code: string, language: Lang, preserveLicense: boolean = 
 }
 
 /**
- * Проверява дали редът съдържа license keywords
+ * Checks if the line contains license keywords
  */
 function isLicenseLine(line: string): boolean {
   const lower = line.toLowerCase();
@@ -247,7 +247,7 @@ function isLicenseLine(line: string): boolean {
 }
 
 /**
- * Оценява колко коментари са премахнати чрез сравнение на редовете
+ * Estimates how many comments were removed by comparing lines
  */
 function estimateRemovedComments(original: string, processed: string): number {
   const originalLines = original.split('\n').filter(l => l.trim().length > 0);
@@ -257,6 +257,6 @@ function estimateRemovedComments(original: string, processed: string): number {
 }
 
 /**
- * Default експорт на главната функция
+ * Default export of the main function
  */
 export default removeComments;

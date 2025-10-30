@@ -1,8 +1,8 @@
 /**
- * Премахва коментари от SQL код
- * @param code - Входен код
- * @param preserveLicense - Дали да запази лицензионни коментари
- * @returns Обработен код
+ * Removes comments from SQL code
+ * @param code - Input code
+ * @param preserveLicense - Whether to preserve license comments
+ * @returns Processed code
  */
 export function removeSqlComments(code: string, preserveLicense: boolean = false): string {
   if (!code) return code;
@@ -21,7 +21,7 @@ export function removeSqlComments(code: string, preserveLicense: boolean = false
       const char = line[j];
       const nextChar = j < line.length - 1 ? line[j + 1] : '';
       
-      // Проверка за multiline коментари /* ... */
+      // Check for multiline comments /* ... */
       if (!inString && !inMultilineComment && char === '/' && nextChar === '*') {
         inMultilineComment = true;
         const restOfLine = line.substring(j);
@@ -41,14 +41,14 @@ export function removeSqlComments(code: string, preserveLicense: boolean = false
         continue;
       }
       
-      // Проверка за string literals
+      // Check for string literals
       if (char === "'" || char === '"') {
         if (!inString) {
           inString = true;
           stringChar = char;
           processedLine += char;
         } else if (char === stringChar) {
-          // Проверка за escaped quote
+          // Check for escaped quote
           if (j > 0 && line[j - 1] !== '\\') {
             inString = false;
           }
@@ -59,9 +59,9 @@ export function removeSqlComments(code: string, preserveLicense: boolean = false
         continue;
       }
       
-      // Проверка за single-line коментари --
+      // Check for single-line comments --
       if (!inString && char === '-' && nextChar === '-') {
-        // Остатъкът от реда е коментар
+        // The rest of the line is a comment
         const comment = line.substring(j);
         if (preserveLicense && isLicenseComment(comment)) {
           processedLine += comment;
@@ -69,13 +69,13 @@ export function removeSqlComments(code: string, preserveLicense: boolean = false
         break;
       }
       
-      // Нормален символ
+      // Normal character
       if (!inMultilineComment) {
         processedLine += char;
       }
     }
     
-    // Добавяме реда ако има съдържание или ако сме в multiline коментар
+    // Add the line if it has content or if we're in a multiline comment
     const trimmed = processedLine.trim();
     if (trimmed.length > 0 || inMultilineComment) {
       result.push(processedLine);
@@ -86,7 +86,7 @@ export function removeSqlComments(code: string, preserveLicense: boolean = false
 }
 
 /**
- * Проверява дали коментарът е лицензионен
+ * Checks if the comment is a license comment
  */
 function isLicenseComment(comment: string): boolean {
   const lower = comment.toLowerCase();
