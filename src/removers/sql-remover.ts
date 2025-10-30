@@ -11,11 +11,26 @@ export function removeSqlComments(code: string, preserveLicense: boolean = false
   const result: string[] = [];
   let inMultilineComment = false;
   
+  let licenseCommentBuffer: string[] = [];
+  let isPreservingLicense = false;
+
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
     let processedLine = '';
     let inString = false;
     let stringChar = '';
+    
+    // If we're in the middle of preserving a license comment, add the line and continue
+    if (isPreservingLicense) {
+      licenseCommentBuffer.push(line);
+      // Check if this line ends the multiline comment
+      if (line.includes('*/')) {
+        isPreservingLicense = false;
+        result.push(licenseCommentBuffer.join('\n'));
+        licenseCommentBuffer = [];
+      }
+      continue;
+    }
     
     for (let j = 0; j < line.length; j++) {
       const char = line[j];
@@ -26,7 +41,14 @@ export function removeSqlComments(code: string, preserveLicense: boolean = false
         inMultilineComment = true;
         const restOfLine = line.substring(j);
         if (preserveLicense && isLicenseComment(restOfLine)) {
-          processedLine += restOfLine;
+          isPreservingLicense = true;
+          licenseCommentBuffer.push(restOfLine);
+          // If the comment ends on the same line, process it immediately
+          if (restOfLine.includes('*/')) {
+            isPreservingLicense = false;
+            result.push(licenseCommentBuffer.join('\n'));
+            licenseCommentBuffer = [];
+          }
           break;
         }
         j++; // Skip next char
@@ -78,8 +100,17 @@ export function removeSqlComments(code: string, preserveLicense: boolean = false
     // Add the line if it has content or if we're in a multiline comment
     const trimmed = processedLine.trim();
     if (trimmed.length > 0 || inMultilineComment) {
-      result.push(processedLine);
+      // Only add if we're not in the middle of preserving a license comment
+      if (!isPreservingLicense) {
+        result.push(processedLine);
+      }
     }
+  }
+  
+  // If we were in the middle of preserving a license comment but didn't close it,
+  // add whatever we have in the buffer
+  if (licenseCommentBuffer.length > 0) {
+    result.push(licenseCommentBuffer.join('\n'));
   }
   
   return result.join('\n');
