@@ -2,7 +2,7 @@
 
 All notable changes to the Comment Bear project will be documented in this file.
 
-## [1.0.0] - 2024-10-31
+## [1.0.0] - 2025-10-31
 
 ### Changed
 - Renamed package from `universal-comment-remover` to `comment-bear`
