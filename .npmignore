@@ -20,6 +20,9 @@ docs/
 examples/
 *.md
 !README.md
+!CHANGELOG.md
+# Explicitly exclude publishing guide
+PUBLISHING.md
 
 # IDE
 .vscode/

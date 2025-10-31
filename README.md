@@ -1,10 +1,25 @@
-# Universal Comment Remover
+<div align="center">
+  <a href="https://github.com/ivan-markov-666/comment-bear">
+    <img src="assets/logo.png" alt="Comment Bear Logo" width="200">
+  </a>
 
-🚀 A universal tool for removing comments from code in multiple programming languages, built with TypeScript.
+  <h3>Your friendly code comment remover</h3>
+
+  [![GitHub](https://img.shields.io/badge/GitHub-Repository-blue?style=flat-square&logo=github)](https://github.com/ivan-markov-666/comment-bear)
+  [![npm](https://img.shields.io/badge/npm-comment--bear-blue?style=flat-square&logo=npm)](https://www.npmjs.com/package/comment-bear)
+  [![Tests](https://img.shields.io/badge/tests-788%2B-brightgreen?style=flat-square)](https://github.com/ivan-markov-666/comment-bear/actions)
+  [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+
+  🐻 A fast and friendly tool for removing comments from code in multiple programming languages. Built with TypeScript and thoroughly tested with 788+ tests to ensure reliability and quality.
+</div>
 
 ## ✨ Features
 
-- 🌐 **Support for 18+ languages**: JavaScript, TypeScript, Python, Java, C#, C, C++, Ruby, PHP, Go, Rust, Swift, HTML, CSS, SQL, YAML, JSON, XML
+- 🌐 **Language Support**:
+  - **Full Support**: JavaScript, TypeScript, Python, Java, C#, C, C++, HTML, CSS, SQL
+  - **Basic Support** (using generic comment patterns): PHP, Go, Rust, Swift, YAML, JSON, XML
+  - *More languages coming soon!*
+
 - 🔍 **Automatic language detection** by file extension or content
 - 📝 **Preserve license comments** (optional)
 - 🔒 **Type safety** with full TypeScript support
@@ -12,10 +27,15 @@
 - 🧪 **Dry-run mode** for preview
 - 📦 **Easy integration** with Node.js and TypeScript projects
 
+> **Note on Language Support**: 
+> - **Full Support**: Dedicated comment remover with language-specific rules
+> - **Basic Support**: Uses generic comment patterns that work for most cases but might not handle all edge cases
+> - We're actively working on adding more languages and improving existing support
+
 ## 📦 Installation
 
 ```bash
-npm install universal-comment-remover
+npm install comment-bear
 ```
 
 ## 🚀 Quick Start
@@ -23,7 +43,7 @@ npm install universal-comment-remover
 ### TypeScript
 
 ```typescript
-import { removeComments } from 'universal-comment-remover';
+import { removeComments } from 'comment-bear';
 
 const code = `
 // This is a comment
@@ -43,7 +63,7 @@ console.log(result.code);
 ### JavaScript (CommonJS)
 
 ```javascript
-const { removeComments } = require('universal-comment-remover');
+const { removeComments } = require('comment-bear');
 
 const code = '# Python comment\nprint("Hello")';
 const result = removeComments(code, { language: 'python' });
@@ -53,7 +73,7 @@ console.log(result.code); // print("Hello")
 ### JavaScript (ES Modules)
 
 ```javascript
-import { removeComments } from 'universal-comment-remover';
+import { removeComments } from 'comment-bear';
 
 const result = removeComments(myCode, { filename: 'script.js' });
 ```
@@ -107,7 +127,7 @@ type Lang =
 ### Automatic Language Detection
 
 ```typescript
-import { removeComments } from 'universal-comment-remover';
+import { removeComments } from 'comment-bear';
 
 // By filename
 const result1 = removeComments(code, { filename: 'script.py' });
@@ -123,7 +143,7 @@ console.log(result2.detectedLanguage); // "html"
 
 ```typescript
 const code = `
-/*! MIT License - Copyright (c) 2024 */
+/*! MIT License - Copyright (c) 2025 */
 // Regular comment
 const x = 5;
 `;
@@ -135,7 +155,7 @@ const result = removeComments(code, {
 
 console.log(result.code);
 // Output:
-// /*! MIT License - Copyright (c) 2024 */
+// /*! MIT License - Copyright (c) 2025 */
 // const x = 5;
 ```
 
@@ -212,67 +232,54 @@ SELECT * FROM users;
 const result = removeComments(sqlCode, { language: 'sql' });
 ```
 
-## 🔧 CLI Usage (Planned for Future Version)
-
-```bash
-# Премахване на коментари от файл
-ucr input.js -o output.js
-
-# С автоматично разпознаване
-ucr src/**/*.ts --preserve-license
-
-# Dry-run режим
-ucr script.py --dry-run
-```
-
 ## 🧪 Testing
 
 ```bash
-# Изпълнение на тестове
+# Run tests
 npm test
 
-# Тестове с coverage
+# Run tests with coverage
 npm test -- --coverage
 
-# Watch режим
+# Watch mode
 npm test -- --watch
 ```
 
 ## 🏗️ Development
 
 ```bash
-# Клониране на репото
-git clone https://github.com/yourusername/universal-comment-remover.git
-cd universal-comment-remover
+# Clone the repository
+git clone https://github.com/yourusername/comment-bear.git
+cd comment-bear
 
-# Инсталация на dependencies
+# Install dependencies
 npm install
 
 # Build
 npm run build
 
-# Watch режим за разработка
+# Watch mode for development
 npm run dev
 ```
 
 ## 📁 Project Structure
 
 ```
-universal-comment-remover/
+comment-bear/
 ├── src/
-│   ├── index.ts              # Главен entry point
-│   ├── types.ts              # TypeScript типове
-│   ├── detectors/            # Детектори за език
+│   ├── index.ts              # Main entry point
+│   ├── types.ts              # TypeScript types
+│   ├── detectors/            # Language detectors
 │   │   └── language-detector.ts
-│   └── removers/             # Специфични removers за езици
+│   └── removers/             # Language-specific removers
 │       ├── javascript-remover.ts
 │       ├── python-remover.ts
 │       ├── css-html-remover.ts
 │       ├── sql-remover.ts
 │       ├── c-style-remover.ts
 │       └── other-remover.ts
-├── test/                     # Тестове
-├── dist/                     # Компилирани файлове (auto-generated)
+├── test/                     # Test
+├── dist/                     # Compiled files (auto-generated)
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -299,8 +306,8 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 📞 Contact
 
-- GitHub: [yourusername](https://github.com/yourusername)
-- Issues: [github.com/yourusername/universal-comment-remover/issues](https://github.com/yourusername/universal-comment-remover/issues)
+- GitHub: [ivan-markov-666](https://github.com/ivan-markov-666)
+- Issues: [github.com/ivan-markov-666/comment-bear/issues](https://github.com/ivan-markov-666/comment-bear/issues)
 
 ## 🗺️ Roadmap
 

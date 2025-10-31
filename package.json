@@ -1,5 +1,5 @@
 {
-  "name": "universal-comment-remover",
+  "name": "comment-bear",
   "version": "1.0.0",
   "description": "Universal comment remover for multiple programming languages with TypeScript support",
   "main": "dist/index.js",
@@ -29,12 +29,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/universal-comment-remover.git"
+    "url": "https://github.com/ivan-markov-666/universal-comment-remover.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/universal-comment-remover/issues"
+    "url": "https://github.com/ivan-markov-666/universal-comment-remover/issues"
   },
-  "homepage": "https://github.com/yourusername/universal-comment-remover#readme",
+  "homepage": "https://github.com/ivan-markov-666/universal-comment-remover#readme",
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.9.2",
